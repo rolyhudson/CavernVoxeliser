@@ -20,7 +20,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\AppData\Roaming\Grasshopper\Libraries\</OutputPath>
+    <OutputPath>..\..\..\..\..\..\AppData\Roaming\Grasshopper\Libraries\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
@@ -58,21 +58,22 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="RhinoCommon">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Rhino 6\System\rhinocommon.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Rhino WIP\System\RhinoCommon.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Grasshopper">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Rhino 6\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Rhino WIP\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="GH_IO">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>C:\Program Files\Rhino 6\Plug-ins\Grasshopper\GH_IO.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Rhino WIP\Plug-ins\Grasshopper\GH_IO.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BBoxFinder.cs" />
     <Compile Include="CavernModuleElements.cs" />
     <Compile Include="CavernVoxelComponent.cs" />
     <Compile Include="CavernVoxelInfo.cs" />

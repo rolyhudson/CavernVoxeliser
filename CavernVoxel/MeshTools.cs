@@ -90,7 +90,49 @@ namespace CavernVoxel
             }
             return trimmedMesh;
         }
+        public static Box findBBox(Mesh m)
+        {
+            BoundingBox minBBox = new BoundingBox();
+            double minVol = Double.MaxValue;
+            double theta = Math.PI / 100;
+            Plane minBBoxPln = new Plane();
+            double minBBoxRot = 0;
+            for (int i = 0; i < 100; i++)
+            {
+                Plane pln = Plane.WorldXY;
+                pln.Rotate(theta * i, Vector3d.ZAxis);
+                List<Point3d> pts = new List<Point3d>();
+                
+                foreach (Point3d p in m.Vertices)
+                {
+                    Point3d remapped = new Point3d();
+                    pln.RemapToPlaneSpace(p, out remapped);
 
+                    pts.Add(remapped);
+                }
+                
+                BoundingBox bBox = new BoundingBox(pts);
+                if (bBox.Volume < minVol)
+                {
+                    minBBoxPln = pln;
+                    minVol = bBox.Volume;
+                    minBBox = bBox;
+                    minBBoxRot = theta * i;
+                }
+
+            }
+            Interval xInt = new Interval(0, minBBox.Max.X - minBBox.Min.X);
+            Interval yInt = new Interval(0, minBBox.Max.Y - minBBox.Min.Y);
+            Interval zInt = new Interval(0, minBBox.Max.Z - minBBox.Min.Z);
+            
+            Transform xform = Transform.PlaneToPlane(Plane.WorldXY, minBBoxPln);
+            Point3d origin = minBBox.Min;
+            origin.Transform(xform);
+            Plane gridPlane = new Plane(origin, Vector3d.ZAxis);
+            gridPlane.Rotate(minBBoxRot, Vector3d.ZAxis);
+            Box box = new Box(gridPlane, xInt, yInt, zInt);
+            return box;
+        }
         private Mesh splitHalfSpace(Plane pln, Mesh mesh)
         {
             var splits = mesh.Split(pln);

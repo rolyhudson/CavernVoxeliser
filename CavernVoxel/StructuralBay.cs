@@ -17,6 +17,8 @@ namespace CavernVoxel
         public Plane maxPlane;
         public Mesh slice = new Mesh();
         public Mesh container = new Mesh();
+        public List<Line> xGrid = new List<Line>();
+        public List<Line> yGrid = new List<Line>();
         Plane referencePlane;
         double xCell;
         double yCell;
@@ -30,18 +32,21 @@ namespace CavernVoxel
         StructuralBay previous;
         bool leader;
         KDTree<double> tree;
-        public StructuralBay(StructuralBay prevBay)
+        bool exploreMode;
+        
+        public StructuralBay(StructuralBay prevBay, bool explore)
         {
             leader = false;
             voxels.Add(new List<StructuralCell>());
             voxels.Add(new List<StructuralCell>());
             previous = prevBay;
             setoutFromPrev();
-
-            voxelise();
+            exploreMode = explore;
+            setGrid();
+            if (!explore)voxelise();
             
         }
-        public StructuralBay(Mesh sliceToVoxelise, Mesh box, Plane refPlane, double x, double y, double z,double memberS)
+        public StructuralBay(Mesh sliceToVoxelise, Mesh box, Plane refPlane, double x, double y, double z,double memberS, bool explore)
         {
             voxels.Add(new List<StructuralCell>());
             voxels.Add(new List<StructuralCell>());
@@ -53,10 +58,12 @@ namespace CavernVoxel
             zCell = z;
             
             memberSize = memberS;
+            exploreMode = explore;
             leader = true;
             findVerticalFit();
             findHorizFit();
-            voxelise();
+            setGrid();
+            if (!explore) voxelise();
             
         }
         private void setKDTree()
@@ -130,6 +137,39 @@ namespace CavernVoxel
                 unitsXa = Convert.ToInt32(Math.Floor(unitsX / 2.0))+2;
                 unitsXb = Convert.ToInt32(Math.Ceiling(unitsX / 2.0));
             }
+            
+        }
+        private void setGrid()
+        {
+            Line grid1 = new Line(minPlane.Origin, maxPlane.Origin);
+            Line grid2 = new Line(minPlane.Origin, maxPlane.Origin);
+            grid2.Transform(Transform.Translation(referencePlane.YAxis * yCell));
+            xGrid.Add(grid1);
+            xGrid.Add(grid2);
+            //sideA
+            for (int x = 0; x < unitsXa; x++)
+            {
+                if (x == unitsXa - 1) yGridLines(x, minPlane, true);
+                else yGridLines(x, minPlane, false);
+            }
+            //sideB
+            for (int x = 0; x < unitsXb; x++)
+            {
+                yGridLines(x, maxPlane, false);
+            }
+        }
+        private void yGridLines(double x,Plane pln, bool filler)
+        {
+            Vector3d shiftX = new Vector3d();
+            if (filler)
+            {
+                Vector3d shiftPrev = pln.XAxis * (x - 1) * xCell;
+                Vector3d shiftFiller =pln.XAxis * (fillerCellX / 2 + xCell / 2);
+                shiftX = shiftPrev + shiftFiller;
+            }
+            else shiftX = pln.XAxis * x * xCell;
+            Point3d start = pln.Origin + shiftX;
+            yGrid.Add(new Line(start, referencePlane.YAxis * yCell));
         }
         private void minMaxFromPlane(Mesh mesh, Plane refPln, ref double min, ref double max)
         {

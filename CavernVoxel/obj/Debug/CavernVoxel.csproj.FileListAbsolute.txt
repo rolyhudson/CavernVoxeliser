@@ -27,3 +27,14 @@ C:\Users\Admin\Documents\projects\PassageProjects\CavernVoxel\CavernVoxel\obj\De
 C:\Users\Admin\Documents\projects\PassageProjects\CavernVoxel\CavernVoxel\obj\Debug\CavernVoxel.dll
 C:\Users\Admin\Documents\projects\PassageProjects\CavernVoxel\CavernVoxel\obj\Debug\CavernVoxel.pdb
 C:\Users\Admin\Documents\projects\PassageProjects\CavernVoxel\CavernVoxel\obj\Debug\CavernVoxel.csprojAssemblyReference.cache
+C:\Users\r.hudson\Documents\AppData\Roaming\Grasshopper\Libraries\Accord.dll.config
+C:\Users\r.hudson\Documents\AppData\Roaming\Grasshopper\Libraries\CavernVoxel.dll
+C:\Users\r.hudson\Documents\AppData\Roaming\Grasshopper\Libraries\CavernVoxel.pdb
+C:\Users\r.hudson\Documents\WORK\projects\passageProjects\CavernVoxeliser\CavernVoxel\obj\Debug\CavernVoxel.csprojAssemblyReference.cache
+C:\Users\r.hudson\Documents\WORK\projects\passageProjects\CavernVoxeliser\CavernVoxel\obj\Debug\CavernVoxel.csproj.CoreCompileInputs.cache
+C:\Users\r.hudson\Documents\WORK\projects\passageProjects\CavernVoxeliser\CavernVoxel\obj\Debug\CavernVoxel.csproj.CopyComplete
+C:\Users\r.hudson\Documents\WORK\projects\passageProjects\CavernVoxeliser\CavernVoxel\obj\Debug\CavernVoxel.dll
+C:\Users\r.hudson\Documents\WORK\projects\passageProjects\CavernVoxeliser\CavernVoxel\obj\Debug\CavernVoxel.pdb
+C:\Users\r.hudson\AppData\Roaming\Grasshopper\Libraries\Accord.dll.config
+C:\Users\r.hudson\AppData\Roaming\Grasshopper\Libraries\CavernVoxel.dll
+C:\Users\r.hudson\AppData\Roaming\Grasshopper\Libraries\CavernVoxel.pdb

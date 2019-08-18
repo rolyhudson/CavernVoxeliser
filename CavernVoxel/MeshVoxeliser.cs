@@ -25,8 +25,9 @@ namespace CavernVoxel
         double length;
         double height;
         double memberSize;
+        bool exploreMode;
         Mesh baseCell = new Mesh();
-        public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay)
+        public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
         {
             meshesToVoxelise = meshes;
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
@@ -35,9 +36,9 @@ namespace CavernVoxel
             yCell = y;
             zCell = z;
             memberSize = memberDim;
-
+            exploreMode = explore;
             voxelSphereRad = Math.Sqrt(x * x+ y * y + z * z)/2;
-            
+            gridPlane = refPlane;
             findBBox();
             setupBays(startBay, endBay);
             
@@ -56,7 +57,7 @@ namespace CavernVoxel
             {
                 if (y % 2 != 0)
                 {
-                    structuralBays.Add( new StructuralBay(structBayPrev));
+                    structuralBays.Add( new StructuralBay(structBayPrev, exploreMode));
                 }
                 else
                 {
@@ -70,7 +71,7 @@ namespace CavernVoxel
                     Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
                     if (slice != null)
                     {
-                        StructuralBay structBay = new StructuralBay(slice, sectionVolume.DuplicateMesh(), boxPln, xCell, yCell, zCell, memberSize);
+                        StructuralBay structBay = new StructuralBay(slice, sectionVolume.DuplicateMesh(), boxPln, xCell, yCell, zCell, memberSize, exploreMode);
                         structuralBays.Add(structBay);
                         structBayPrev = structBay;
                     }
@@ -78,38 +79,20 @@ namespace CavernVoxel
                 
             }
         }
-        
         private void findBBox()
         {
             BoundingBox minBBox = new BoundingBox();
-            double minVol = Double.MaxValue;
-            double theta = Math.PI / 100;
             Plane minBBoxPln = new Plane();
             double minBBoxRot = 0;
-            for (int i = 0; i < 100; i++)
+            if (gridPlane == null)
             {
-                Plane pln = Plane.WorldXY;
-                pln.Rotate(theta * i, Vector3d.ZAxis);
-                List<Point3d> pts = new List<Point3d>();
-                foreach (Mesh m in meshesToVoxelise)
-                {
-                    foreach (Point3d p in m.Vertices)
-                    {
-                        Point3d remapped = new Point3d();
-                        pln.RemapToPlaneSpace(p, out remapped);
-
-                        pts.Add(remapped);
-                    }
-                }
-                BoundingBox bBox = new BoundingBox(pts);
-                if (bBox.Volume < minVol)
-                {
-                    minBBoxPln = pln;
-                    minVol = bBox.Volume;
-                    minBBox = bBox;
-                    minBBoxRot = theta * i;
-                }
-
+                minBBox = findBBoxByPlanRotation(ref minBBoxPln,ref minBBoxRot);
+            }
+            else
+            {
+                minBBox = findBBoxGivenPlane(gridPlane);
+                minBBoxPln = gridPlane;
+                minBBoxRot = Vector3d.VectorAngle(Vector3d.XAxis, gridPlane.XAxis);
             }
             width = minBBox.Max.X - minBBox.Min.X;
             length = minBBox.Max.Y - minBBox.Min.Y;
@@ -119,6 +102,46 @@ namespace CavernVoxel
             origin.Transform(xform);
             gridPlane = new Plane(origin, Vector3d.ZAxis);
             gridPlane.Rotate(minBBoxRot, Vector3d.ZAxis);
+        }
+        private BoundingBox findBBoxGivenPlane(Plane pln)
+        {
+            List<Point3d> pts = new List<Point3d>();
+            foreach (Mesh m in meshesToVoxelise)
+            {
+                foreach (Point3d p in m.Vertices)
+                {
+                    Point3d remapped = new Point3d();
+                    pln.RemapToPlaneSpace(p, out remapped);
+
+                    pts.Add(remapped);
+                }
+            }
+            BoundingBox bBox = new BoundingBox(pts);
+            return bBox;
+        }
+        private BoundingBox findBBoxByPlanRotation(ref Plane minBBoxPln,ref double minBBoxRot)
+        {
+            BoundingBox minBBox = new BoundingBox();
+            double minVol = Double.MaxValue;
+            double theta = Math.PI / 100;
+           
+            for (int i = 0; i < 100; i++)
+            {
+                Plane pln = Plane.WorldXY;
+                pln.Rotate(theta * i, Vector3d.ZAxis);
+                
+                BoundingBox bBox = findBBoxGivenPlane(pln);
+                if (bBox.Volume < minVol)
+                {
+                    minBBoxPln = pln;
+                    minVol = bBox.Volume;
+                    minBBox = bBox;
+                    minBBoxRot = theta * i;
+                }
+
+            }
+            return minBBox;
+            
         }
         
     }

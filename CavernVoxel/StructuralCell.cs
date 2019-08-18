@@ -46,8 +46,11 @@ namespace CavernVoxel
             memberSize = memberDim;
             caveFace = mesh;
             id = ID;
+            
             setInnerBound();
             trimCell();
+            
+                
         }
         
         private void trimCell()
