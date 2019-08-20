@@ -44,6 +44,8 @@ namespace CavernVoxel
             pManager.AddIntegerParameter("start bay", "sb", "", GH_ParamAccess.item, 10);
             pManager.AddBooleanParameter("explore mode", "em", "", GH_ParamAccess.item, true);
             pManager.AddPlaneParameter("reference plane", "rp", "", GH_ParamAccess.item);
+
+            pManager[8].Optional = true;
         }
 
         /// <summary>
@@ -53,14 +55,14 @@ namespace CavernVoxel
         {
             
             pManager.AddGenericParameter("trim cells", "tc", "", GH_ParamAccess.tree);
-            pManager.AddGenericParameter("perimeter cells", "tc", "", GH_ParamAccess.tree);
-            pManager.AddGenericParameter("vertical support cells", "tc", "", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("perimeter cells", "pc", "", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("vertical support cells", "vsc", "", GH_ParamAccess.tree);
             
             
             pManager.AddMeshParameter("cave slices", "cs", "", GH_ParamAccess.tree);
             pManager.AddMeshParameter("section boxes", "sb", "", GH_ParamAccess.tree);
             pManager.AddCurveParameter("grid", "g", "", GH_ParamAccess.tree);
-
+            pManager.AddCurveParameter("links", "l", "", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -88,7 +90,7 @@ namespace CavernVoxel
             if (!DA.GetData(6, ref startBay)) return;
             if (!DA.GetData(7, ref exploreMode)) return;
             DA.GetData(8, ref refPlane);
-            MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay, startBay + numBays,exploreMode,refPlane);
+            MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay, startBay + numBays,exploreMode, refPlane);
 
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> skinCells = new DataTree<StructuralCell>();
@@ -97,8 +99,9 @@ namespace CavernVoxel
             GH_Structure<GH_Mesh> caveSlices = new GH_Structure<GH_Mesh>();
             GH_Structure<GH_Mesh> sectionBoxes = new GH_Structure<GH_Mesh>();
             GH_Structure<GH_Curve> grid = new GH_Structure<GH_Curve>();
+            GH_Structure<GH_Curve> links = new GH_Structure<GH_Curve>();
 
-            getSlices(mvox, ref caveSlices,ref sectionBoxes, ref grid);
+            getSlices(mvox, ref caveSlices,ref sectionBoxes, ref grid,ref links);
             getModules(mvox, ref perimeterCells, ref skinCells, ref verticalSupportCells);
             
             
@@ -108,6 +111,7 @@ namespace CavernVoxel
             DA.SetDataTree(3, caveSlices);
             DA.SetDataTree(4, sectionBoxes);
             DA.SetDataTree(5, grid);
+            DA.SetDataTree(6, links);
         }
         
         private void getModules(MeshVoxeliser mvox,ref DataTree<StructuralCell> perimeterCells, ref DataTree<StructuralCell> trimCells, 
@@ -150,7 +154,7 @@ namespace CavernVoxel
                 bay++;
             }
         }
-        private void getSlices(MeshVoxeliser mvox, ref GH_Structure<GH_Mesh> caveslices, ref GH_Structure<GH_Mesh> sectionboxes,ref GH_Structure<GH_Curve> grid)
+        private void getSlices(MeshVoxeliser mvox, ref GH_Structure<GH_Mesh> caveslices, ref GH_Structure<GH_Mesh> sectionboxes,ref GH_Structure<GH_Curve> grid,ref GH_Structure<GH_Curve> links)
         {
             foreach (StructuralBay sb in mvox.structuralBays)
             {
@@ -158,6 +162,7 @@ namespace CavernVoxel
                 sectionboxes.Append(new GH_Mesh(sb.container));
                 foreach (Line l in sb.xGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
                 foreach(Line l in sb.yGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
+                foreach (Line l in sb.linkElements) links.Append(new GH_Curve(l.ToNurbsCurve()));
             }
         }
         

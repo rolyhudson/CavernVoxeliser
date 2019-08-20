@@ -133,6 +133,7 @@ namespace CavernVoxel
             Box box = new Box(gridPlane, xInt, yInt, zInt);
             return box;
         }
+        
         private Mesh splitHalfSpace(Plane pln, Mesh mesh)
         {
             var splits = mesh.Split(pln);

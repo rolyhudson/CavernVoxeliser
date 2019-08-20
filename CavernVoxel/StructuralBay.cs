@@ -13,6 +13,7 @@ namespace CavernVoxel
     class StructuralBay
     {
         public List<List<StructuralCell>> voxels = new List<List<StructuralCell>>();
+        public List<Line> linkElements = new List<Line>();
         public Plane minPlane;
         public Plane maxPlane;
         public Mesh slice = new Mesh();
@@ -84,10 +85,7 @@ namespace CavernVoxel
             xCell = previous.xCell;
             yCell = previous.yCell;
             zCell = previous.zCell;
-
             memberSize = previous.memberSize;
-
-            
             unitsZ = previous.unitsZ;
             minPlane = previous.minPlane;
             maxPlane = previous.maxPlane;
@@ -188,6 +186,83 @@ namespace CavernVoxel
                 }
             }
         }
+        private void setLinkElements()
+        {
+            for(int i = 0;i<voxels.Count;i++)
+            {
+                for(int j =0;j<voxels[i].Count;j++)
+                {
+                    if(voxels[i][j].cellType!=StructuralCell.CellType.Undefined)
+                    {
+                        //makeLinks("x", voxels[i][j]);
+                        if(leader) makeLinks("y", voxels[i][j]);
+                        //makeLinks("z", voxels[i][j]);
+                    }
+                }
+            }
+        }
+        private void makeLinks(string direction,StructuralCell c)
+        {
+
+            List<Vector3d> vectors = makeLinkVectors(direction);
+            Vector3d linkDirection = new Vector3d();
+            switch (direction)
+            {
+                case "x":
+                    linkDirection = referencePlane.XAxis;
+                    break;
+                case "y":
+                    linkDirection = referencePlane.YAxis;
+                    break;
+                case "z":
+                    linkDirection = referencePlane.ZAxis;
+                    break;
+            }
+            Transform xform = Transform.PlaneToPlane(Plane.WorldXY, referencePlane);
+            foreach (Vector3d v in vectors)
+            {
+                v.Transform(xform);
+                linkElements.Add(new Line(c.centroid + v, linkDirection, memberSize));
+            }
+        }
+        private List<Vector3d> makeLinkVectors(string direction)
+        {
+            List<Vector3d> vectors = new List<Vector3d>();
+            double x = xCell/2 - memberSize / 2;
+            double y = yCell/2 - memberSize / 2;
+            double z = zCell/2 - memberSize / 2;
+            Vector3d v1 = new Vector3d();
+            Vector3d v2 = new Vector3d();
+            Vector3d v3 = new Vector3d();
+            Vector3d v4 = new Vector3d();
+            switch (direction)
+            {
+                case "x":
+                    v1 = new Vector3d(x, y, z);
+                    v2 = new Vector3d(x, -y, z);
+                    v3 = new Vector3d(x, -y, -z);
+                    v4 = new Vector3d(x, y, -z);
+                    break;
+                case "y":
+                    v1 = new Vector3d(x, y, z);
+                    v2 = new Vector3d(-x, y, z);
+                    v3 = new Vector3d(-x, y, -z);
+                    v4 = new Vector3d(x, y, -z);
+                    break;
+                case "z":
+                    v1 = new Vector3d(x, y, z);
+                    v2 = new Vector3d(-x, y, z);
+                    v3 = new Vector3d(-x, -y, z);
+                    v4 = new Vector3d(x, -y, z);
+                    break;
+            }
+            vectors.Add(v1);
+            vectors.Add(v2);
+            vectors.Add(v3);
+            vectors.Add(v4);
+            return vectors;
+        }
+        
         private void voxelise()
         {
             for (int z = 0; z <= unitsZ; z++)
@@ -206,6 +281,7 @@ namespace CavernVoxel
                 }
             }
             cullSupports();
+            setLinkElements();
         }
         private void cullSupports()
         {
@@ -226,7 +302,6 @@ namespace CavernVoxel
                     }
                 }
             }
-            
             tagInternalCells();
             setVerticalSupports();
         }

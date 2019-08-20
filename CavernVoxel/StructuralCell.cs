@@ -14,12 +14,12 @@ namespace CavernVoxel
         
         public Brep innerBoundary;
         public Brep trimInnerBoundary;
-        
+        public List<Curve> untrimmedCentreLines = new List<Curve>();
         public List<Curve> centreLines = new List<Curve>();
         public Mesh caveFace = new Mesh();
         public Brep millingVolume = new Brep();
         public CellType cellType;
-        
+        public Mesh GSAmesh;
         public List<Point3d> nodes = new List<Point3d>();
         public Point3d centroid;
         //plane normals point to out side mesh
@@ -35,7 +35,7 @@ namespace CavernVoxel
             cellType = CellType.Undefined;
             id = ID;
             setInnerBound();
-            getUntrimmedCentreLines();
+            centreLines = untrimmedCentreLines;
         }
         public StructuralCell (Mesh bound,double memberDim,Mesh mesh, int[] ID)
         {
@@ -49,24 +49,29 @@ namespace CavernVoxel
             
             setInnerBound();
             trimCell();
-            
-                
         }
         
         private void trimCell()
         {
+            //no planes required right now
             setMidPlane();
-            getBackFrontPlanes();
+            //getBackFrontPlanes();
             trimStructure();
-            findNodes();
+            findNodesTrimCentreLines();
             //trimBoundary = splitHalfSpace(frontPlane, boundary);
-            millingVolume = trimOutMillingVolume();
+            //millingVolume = trimOutMillingVolume();
         }
         private void setInnerBound()
         {
             centroid = MeshTools.meshCentroid(boundary);
-            Mesh offset = boundary.Offset(memberSize/2);
+            double root = Math.Sqrt(memberSize/2 * memberSize/2 * 3);
+            //rhino mesh offset is with vertex normal
+            Mesh offset = boundary.Offset(root);
             innerBoundary = Brep.CreateFromMesh(offset, false);
+            foreach(BrepEdge be in innerBoundary.Edges)
+            {
+                untrimmedCentreLines.Add(be.DuplicateCurve());
+            }
         }
         private Brep trimOutMillingVolume()
         {
@@ -87,23 +92,71 @@ namespace CavernVoxel
             Brep capped =   millingVol.CapPlanarHoles(Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
             return capped;
         }
-        private void findNodes()
+        private void findNodesTrimCentreLines()
         {
-            Brep outerBoundary = Brep.CreateFromMesh(boundary, false);
-            Plane trim = new Plane(backPlane.Origin, backPlane.Normal);
-            var result = outerBoundary.Trim(trim, Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
-            if (result.Length > 0)
+            foreach(Curve c in untrimmedCentreLines)
             {
-                
-                foreach (BrepEdge e in result[0].Edges)
+                Line edge = new Line(c.PointAtStart, c.PointAtEnd);
+                int[] faceIds;
+                Point3d[] points = Rhino.Geometry.Intersect.Intersection.MeshLine(caveFace, edge, out faceIds);
+                if (points.Length > 0)
                 {
-                    if (e.Valence == EdgeAdjacency.Naked)
+                    foreach (Point3d p in points)
                     {
-                        nodes.Add(e.PointAtStart);
-                        nodes.Add(e.PointAtEnd);
+                        Plane trimPln = new Plane(p, midPlane.Normal);
+                        centreLines.Add(splitLineHalfSpace(trimPln, edge).ToNurbsCurve());
+                        nodes.Add(p);
                     }
-
                 }
+                else
+                {
+                    //untrimmed centre line 
+                    //is it inside or outside the mesh
+                    if(!curveIsInsideMesh(c))centreLines.Add(c);
+                }
+            }
+            if(nodes.Count>2) MakeGSAMesh();
+        }
+        private bool curveIsInsideMesh(Curve c)
+        {
+            //mesh normals towards inside
+            Point3d mid = c.PointAt(c.Domain.Mid);
+            MeshPoint mp = caveFace.ClosestMeshPoint(mid, 0);
+            Vector3d v = mid - mp.Point;
+            if (Vector3d.VectorAngle(v, caveFace.FaceNormals[mp.FaceIndex]) < Math.PI / 2)
+            {
+                //inside
+                return true;
+            }
+            return false;
+        }
+        private void MakeGSAMesh()
+        {
+            GSAmesh = new Mesh();
+            //convert point3d to node2
+            //grasshopper requres that nodes are saved within a Node2List for Delaunay
+            var node2s = new Grasshopper.Kernel.Geometry.Node2List();
+            for (int i = 0; i < nodes.Count; i++)
+            {
+
+                //map nodes onto the mid plane
+                Point3d mappedPt = new Point3d();
+                midPlane.RemapToPlaneSpace(nodes[i], out mappedPt);
+                node2s.Append(new Grasshopper.Kernel.Geometry.Node2(mappedPt.X, mappedPt.Y));
+                GSAmesh.Vertices.Add(nodes[i]);
+            }
+            //solve Delaunay
+            var delMesh = new Mesh();
+            var faces = new List<Grasshopper.Kernel.Geometry.Delaunay.Face>();
+
+            faces = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Faces(node2s,1);
+
+            //output in 2d
+            delMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(node2s, 1, ref faces);
+            
+            foreach(MeshFace f in delMesh.Faces)
+            {
+                GSAmesh.Faces.AddFace(f);
             }
         }
         private void trimStructure()
@@ -117,7 +170,6 @@ namespace CavernVoxel
                 foreach(BrepEdge e in trimInnerBoundary.Edges)
                 {
                     centreLines.Add(e.DuplicateCurve());
-                    
                 }
             }
 
@@ -126,14 +178,6 @@ namespace CavernVoxel
         {
             var result = toSplit.Trim(pln, Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
             return result[0];
-        }
-        private void getUntrimmedCentreLines()
-        {
-            foreach (BrepEdge e in innerBoundary.Edges)
-            {
-                centreLines.Add(e.DuplicateCurve());
-
-            }
         }
         
         
@@ -172,7 +216,7 @@ namespace CavernVoxel
                 //ignoring any point on the plane
                 if (Vector3d.VectorAngle(midPlane.Normal, v) > Math.PI / 2)
                 {
-                    //angle is greate than 90 so its behind
+                    //angle is greater than 90 so its behind
                     if (v.Length > maxDistBehind) maxDistBehind = v.Length;
                 }
                 else
@@ -197,8 +241,29 @@ namespace CavernVoxel
             InsideCell,
             Undefined
         }
-        
-        
-        
+        private Line splitLineHalfSpace(Plane pln, Line line)
+        {
+            double p = 0;
+            var res = Rhino.Geometry.Intersect.Intersection.LinePlane(line, pln, out p);
+            if (res)
+            {
+                Point3d iPt = line.PointAt(p);
+                Vector3d v = line.From - iPt;
+                if (Vector3d.VectorAngle(pln.Normal, v) > Math.PI / 2)
+                {
+                    return new Line(iPt, line.From);
+                }
+                else
+                {
+                    return new Line(iPt, line.To);
+                }
+            }
+            else
+            {
+                return line;
+            }
+        }
+
+
     }
 }

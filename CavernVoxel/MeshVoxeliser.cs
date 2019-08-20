@@ -17,7 +17,7 @@ namespace CavernVoxel
         double zCell;
         List<Mesh> meshesToVoxelise;
         public List<StructuralBay> structuralBays = new List<StructuralBay>();
-        
+        public List<StructuralSpan> structuralSpans = new List<StructuralSpan>();
         double voxelSphereRad;
         
         Plane gridPlane;
@@ -41,6 +41,10 @@ namespace CavernVoxel
             gridPlane = refPlane;
             findBBox();
             setupBays(startBay, endBay);
+            
+        }
+        private void setupSpans(int start, int end)
+        {
             
         }
         
