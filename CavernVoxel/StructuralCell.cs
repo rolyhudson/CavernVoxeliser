@@ -22,31 +22,33 @@ namespace CavernVoxel
         public Mesh GSAmesh;
         public List<Point3d> nodes = new List<Point3d>();
         public Point3d centroid;
+        public bool fillerCell;
         //plane normals point to out side mesh
         Plane midPlane;
         Plane frontPlane;
         Plane backPlane;
         Vector3d toOutside;
         double memberSize;
-        public StructuralCell(Mesh bound, double memberDim,int[] ID)
+        public StructuralCell(Mesh bound, double memberDim,int[] ID,bool filler)
         {
             boundary = bound;
             memberSize = memberDim;
             cellType = CellType.Undefined;
             id = ID;
+            fillerCell = filler;
             setInnerBound();
             centreLines = untrimmedCentreLines;
+            
         }
-        public StructuralCell (Mesh bound,double memberDim,Mesh mesh, int[] ID)
+        public StructuralCell (Mesh bound,double memberDim,Mesh mesh, int[] ID,bool filler)
         {
             cellType = CellType.SkinCell;
-            
             boundary = bound;
             boundary.FaceNormals.ComputeFaceNormals();
             memberSize = memberDim;
             caveFace = mesh;
             id = ID;
-            
+            fillerCell = filler;
             setInnerBound();
             trimCell();
         }
@@ -112,18 +114,18 @@ namespace CavernVoxel
                 {
                     //untrimmed centre line 
                     //is it inside or outside the mesh
-                    if(!curveIsInsideMesh(c))centreLines.Add(c);
+                    if(!curveIsInsideMesh(c, caveFace))centreLines.Add(c);
                 }
             }
             if(nodes.Count>2) MakeGSAMesh();
         }
-        private bool curveIsInsideMesh(Curve c)
+        public static bool curveIsInsideMesh(Curve c, Mesh m)
         {
             //mesh normals towards inside
             Point3d mid = c.PointAt(c.Domain.Mid);
-            MeshPoint mp = caveFace.ClosestMeshPoint(mid, 0);
+            MeshPoint mp = m.ClosestMeshPoint(mid, 0);
             Vector3d v = mid - mp.Point;
-            if (Vector3d.VectorAngle(v, caveFace.FaceNormals[mp.FaceIndex]) < Math.PI / 2)
+            if (Vector3d.VectorAngle(v,m.FaceNormals[mp.FaceIndex]) < Math.PI / 2)
             {
                 //inside
                 return true;

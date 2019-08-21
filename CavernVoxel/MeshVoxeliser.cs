@@ -11,76 +11,50 @@ namespace CavernVoxel
 {
     class MeshVoxeliser
     {
-        
-        double xCell;
-        double yCell;
-        double zCell;
+
         List<Mesh> meshesToVoxelise;
-        public List<StructuralBay> structuralBays = new List<StructuralBay>();
-        public List<StructuralSpan> structuralSpans = new List<StructuralSpan>();
-        double voxelSphereRad;
         
-        Plane gridPlane;
+        public List<StructuralSpan> structuralSpans = new List<StructuralSpan>();
+        VoxelParameters parameters;
+
+         Plane gridPlane;
         double width;
         double length;
         double height;
-        double memberSize;
-        bool exploreMode;
+        
         Mesh baseCell = new Mesh();
         public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
         {
+            parameters = new VoxelParameters(x, y, z, memberDim, explore);
             meshesToVoxelise = meshes;
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
             meshesToVoxelise.ForEach(m => m.FaceNormals.ComputeFaceNormals());
-            xCell = x;
-            yCell = y;
-            zCell = z;
-            memberSize = memberDim;
-            exploreMode = explore;
-            voxelSphereRad = Math.Sqrt(x * x+ y * y + z * z)/2;
             gridPlane = refPlane;
             findBBox();
-            setupBays(startBay, endBay);
+            setupSpans(startBay, endBay);
             
         }
         private void setupSpans(int start, int end)
         {
-            
-        }
-        
-        
-        private void setupBays(int start, int end)
-        {
-
-            int unitsY = Convert.ToInt32(Math.Ceiling(length / yCell));
+            int unitsY = Convert.ToInt32(Math.Ceiling(length / parameters.yCell));
             if (start % 2 != 0) start = start - 1;
             if (end > unitsY) end = unitsY;
             if (start > unitsY) { start = unitsY - 1; end = unitsY; }
-            StructuralBay structBayPrev = null;
-            for (int y = start; y < end; y++)//unitsY
+            
+            for (int y = start; y < end; y+=2)//unitsY
             {
-                if (y % 2 != 0)
+                Vector3d shiftY = gridPlane.YAxis * y * parameters.yCell;
+                Point3d basePt = new Point3d(gridPlane.OriginX, gridPlane.OriginY, gridPlane.OriginZ);
+                Point3d origin = basePt + shiftY;
+                Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
+                //containing box with allowance in x and z directions
+                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, width + parameters.xCell / 10), new Interval(0, parameters.yCell * 2), new Interval(-parameters.zCell / 10, height + parameters.zCell / 10));
+                Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
+                Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
+                if (slice != null)
                 {
-                    structuralBays.Add( new StructuralBay(structBayPrev, exploreMode));
+                    structuralSpans.Add(new StructuralSpan(parameters,slice,boxPln));
                 }
-                else
-                {
-                    Vector3d shiftY = gridPlane.YAxis * y * yCell;
-                    Point3d basePt = new Point3d(gridPlane.OriginX, gridPlane.OriginY, gridPlane.OriginZ);
-                    Point3d origin = basePt + shiftY;
-                    Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
-                    //containing box with allowance in x and z directions
-                    Box box = new Box(boxPln, new Interval(-xCell / 10, width + xCell / 10), new Interval(0, yCell * 2), new Interval(-zCell / 10, height + zCell / 10));
-                    Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
-                    Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
-                    if (slice != null)
-                    {
-                        StructuralBay structBay = new StructuralBay(slice, sectionVolume.DuplicateMesh(), boxPln, xCell, yCell, zCell, memberSize, exploreMode);
-                        structuralBays.Add(structBay);
-                        structBayPrev = structBay;
-                    }
-                }
-                
             }
         }
         private void findBBox()
@@ -101,11 +75,11 @@ namespace CavernVoxel
             width = minBBox.Max.X - minBBox.Min.X;
             length = minBBox.Max.Y - minBBox.Min.Y;
             height = minBBox.Max.Z - minBBox.Min.Z;
-            Transform xform = Transform.PlaneToPlane(Plane.WorldXY, minBBoxPln);
-            Point3d origin = minBBox.Min;
-            origin.Transform(xform);
-            gridPlane = new Plane(origin, Vector3d.ZAxis);
-            gridPlane.Rotate(minBBoxRot, Vector3d.ZAxis);
+            //Transform xform = Transform.PlaneToPlane(Plane.WorldXY, minBBoxPln);
+            //Point3d origin = minBBox.Min;
+            //origin.Transform(xform);
+            //gridPlane = new Plane(origin, Vector3d.ZAxis);
+            //gridPlane.Rotate(minBBoxRot, Vector3d.ZAxis);
         }
         private BoundingBox findBBoxGivenPlane(Plane pln)
         {

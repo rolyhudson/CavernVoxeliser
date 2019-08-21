@@ -39,6 +39,7 @@ namespace CavernVoxel
             pManager.AddBrepParameter("complete cells", "cc", "", GH_ParamAccess.tree);
             pManager.AddMeshParameter("cave face meshes", "cfm", "", GH_ParamAccess.tree);
             pManager.AddMeshParameter("GSAMeshes", "gsam", "", GH_ParamAccess.tree);
+            pManager.AddPointParameter("cell cenroids", "cc", "", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -58,6 +59,7 @@ namespace CavernVoxel
                 GH_Structure<GH_Curve> centreLines = new GH_Structure<GH_Curve>();
                 GH_Structure<GH_Mesh> gsameshes = new GH_Structure<GH_Mesh>();
                 GH_Structure<GH_Point> nodes = new GH_Structure<GH_Point>();
+                GH_Structure<GH_Point> centroids = new GH_Structure<GH_Point>();
 
                 for (int i = 0; i < obj.Branches.Count; i++)
                 {
@@ -86,7 +88,7 @@ namespace CavernVoxel
                                 
                             }
                             cellscomplete.Append(new GH_Brep(cell.innerBoundary), path);
-                            
+                            centroids.Append(new GH_Point(cell.centroid), path);
 
                         }
 
@@ -98,6 +100,7 @@ namespace CavernVoxel
                 DA.SetDataTree(2, cellscomplete);
                 DA.SetDataTree(3, caveFaceMeshes);
                 DA.SetDataTree(4, gsameshes);
+                DA.SetDataTree(5, centroids);
             }
         }
         /// <summary>

@@ -120,49 +120,51 @@ namespace CavernVoxel
             int bay = 0;
             int side = 0;
             int cell = 0;
-            foreach (StructuralBay sb in mvox.structuralBays)
+            foreach (StructuralSpan sp in mvox.structuralSpans)
             {
-                
-                side = 0;
-                foreach (List<StructuralCell> sc in sb.voxels)
+                foreach(StructuralBay sb in sp.structuralBays)
                 {
-                    cell = 0;
-                    foreach (StructuralCell c in sc)
+                    side = 0;
+                    foreach (List<StructuralCell> sc in sb.voxels)
                     {
-                        if (c.cellType != StructuralCell.CellType.InsideCell)
+                        cell = 0;
+                        foreach (StructuralCell c in sc)
                         {
-                            GH_Path path = new GH_Path(new int[] { bay, side, cell });
-                            switch (c.cellType)
+                            if (c.cellType != StructuralCell.CellType.InsideCell)
                             {
-                                case StructuralCell.CellType.SkinCell:
-                                    trimCells.Add(c, path);
-                                    break;
-                                case StructuralCell.CellType.PerimeterCell:
-                                    perimeterCells.Add(c, path);
-                                    break;
-                                case StructuralCell.CellType.VerticalFillCell:
-                                    verticalCells.Add(c, path);
-                                    break;
+                                GH_Path path = new GH_Path(new int[] { bay, side, cell });
+                                switch (c.cellType)
+                                {
+                                    case StructuralCell.CellType.SkinCell:
+                                        trimCells.Add(c, path);
+                                        break;
+                                    case StructuralCell.CellType.PerimeterCell:
+                                        perimeterCells.Add(c, path);
+                                        break;
+                                    case StructuralCell.CellType.VerticalFillCell:
+                                        verticalCells.Add(c, path);
+                                        break;
+                                }
+
+                                cell++;
                             }
 
-                            cell++;
                         }
-
+                        side++;
                     }
-                    side++;
+                    bay++;
                 }
-                bay++;
+                
             }
         }
         private void getSlices(MeshVoxeliser mvox, ref GH_Structure<GH_Mesh> caveslices, ref GH_Structure<GH_Mesh> sectionboxes,ref GH_Structure<GH_Curve> grid,ref GH_Structure<GH_Curve> links)
         {
-            foreach (StructuralBay sb in mvox.structuralBays)
+            foreach (StructuralSpan sp in mvox.structuralSpans)
             {
-                caveslices.Append(new GH_Mesh(sb.slice));
-                sectionboxes.Append(new GH_Mesh(sb.container));
-                foreach (Line l in sb.xGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
-                foreach(Line l in sb.yGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
-                foreach (Line l in sb.linkElements) links.Append(new GH_Curve(l.ToNurbsCurve()));
+                caveslices.Append(new GH_Mesh(sp.slice));
+                foreach (Line l in sp.xGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
+                foreach (Line l in sp.yGrid) grid.Append(new GH_Curve(l.ToNurbsCurve()));
+                foreach (Line l in sp.linkElements) links.Append(new GH_Curve(l.ToNurbsCurve()));
             }
         }
         

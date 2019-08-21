@@ -83,6 +83,7 @@
     <Compile Include="StructuralBay.cs" />
     <Compile Include="StructuralCell.cs" />
     <Compile Include="StructuralSpan.cs" />
+    <Compile Include="VoxelParameters.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
