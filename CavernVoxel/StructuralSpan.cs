@@ -82,10 +82,6 @@ namespace CavernVoxel
                         if(c.cellType != StructuralCell.CellType.Undefined)
                         {
                             var others = sb.voxels.SelectMany(sc => sc).ToList();
-                            if (c.fillerCell)
-                            {
-                                int b = 0;
-                            }
                             if (hasCellToSide(c, others)) makeLinks("x", c);
                             if (hasCellAbove(c, others)) makeLinks("z", c);
                         }

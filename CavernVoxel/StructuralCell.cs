@@ -23,6 +23,7 @@ namespace CavernVoxel
         public List<Point3d> nodes = new List<Point3d>();
         public Point3d centroid;
         public bool fillerCell;
+        
         //plane normals point to out side mesh
         Plane midPlane;
         Plane frontPlane;
@@ -155,11 +156,14 @@ namespace CavernVoxel
 
             //output in 2d
             delMesh = Grasshopper.Kernel.Geometry.Delaunay.Solver.Solve_Mesh(node2s, 1, ref faces);
-            
-            foreach(MeshFace f in delMesh.Faces)
+            if (delMesh != null)
             {
-                GSAmesh.Faces.AddFace(f);
+                foreach (MeshFace f in delMesh.Faces)
+                {
+                    GSAmesh.Faces.AddFace(f);
+                }
             }
+            
         }
         private void trimStructure()
         {

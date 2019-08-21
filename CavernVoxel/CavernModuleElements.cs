@@ -40,6 +40,7 @@ namespace CavernVoxel
             pManager.AddMeshParameter("cave face meshes", "cfm", "", GH_ParamAccess.tree);
             pManager.AddMeshParameter("GSAMeshes", "gsam", "", GH_ParamAccess.tree);
             pManager.AddPointParameter("cell cenroids", "cc", "", GH_ParamAccess.tree);
+            pManager.AddBooleanParameter("disjointed cave face", "df", "", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -60,6 +61,7 @@ namespace CavernVoxel
                 GH_Structure<GH_Mesh> gsameshes = new GH_Structure<GH_Mesh>();
                 GH_Structure<GH_Point> nodes = new GH_Structure<GH_Point>();
                 GH_Structure<GH_Point> centroids = new GH_Structure<GH_Point>();
+                GH_Structure<GH_Boolean> disjoint = new GH_Structure<GH_Boolean>();
 
                 for (int i = 0; i < obj.Branches.Count; i++)
                 {
@@ -83,9 +85,10 @@ namespace CavernVoxel
 
                             if (cell.cellType == StructuralCell.CellType.SkinCell)
                             {
-                                gsameshes.Append(new GH_Mesh(cell.GSAmesh), path);
-                                caveFaceMeshes.Append(new GH_Mesh(cell.caveFace), path);
-                                
+                                if(cell.GSAmesh!=null) gsameshes.Append(new GH_Mesh(cell.GSAmesh), path);
+                                if(cell.caveFace!=null) caveFaceMeshes.Append(new GH_Mesh(cell.caveFace), path);
+                                if (cell.caveFace.DisjointMeshCount > 1) disjoint.Append(new GH_Boolean(true));
+                                else disjoint.Append(new GH_Boolean(false));
                             }
                             cellscomplete.Append(new GH_Brep(cell.innerBoundary), path);
                             centroids.Append(new GH_Point(cell.centroid), path);
@@ -101,6 +104,7 @@ namespace CavernVoxel
                 DA.SetDataTree(3, caveFaceMeshes);
                 DA.SetDataTree(4, gsameshes);
                 DA.SetDataTree(5, centroids);
+                DA.SetDataTree(6, disjoint);
             }
         }
         /// <summary>

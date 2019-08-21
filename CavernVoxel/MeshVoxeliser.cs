@@ -18,9 +18,9 @@ namespace CavernVoxel
         VoxelParameters parameters;
 
          Plane gridPlane;
-        double width;
+        double width = 60000;
         double length;
-        double height;
+        double height =40000;
         
         Mesh baseCell = new Mesh();
         public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
@@ -30,13 +30,13 @@ namespace CavernVoxel
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
             meshesToVoxelise.ForEach(m => m.FaceNormals.ComputeFaceNormals());
             gridPlane = refPlane;
-            findBBox();
+            //findBBox();
             setupSpans(startBay, endBay);
             
         }
         private void setupSpans(int start, int end)
         {
-            int unitsY = Convert.ToInt32(Math.Ceiling(length / parameters.yCell));
+            int unitsY = end - start;
             if (start % 2 != 0) start = start - 1;
             if (end > unitsY) end = unitsY;
             if (start > unitsY) { start = unitsY - 1; end = unitsY; }
