@@ -78,6 +78,10 @@ namespace CavernVoxel
                             {
                                 centreLines.Append(new GH_Curve(cl.ToNurbsCurve()), path);
                             }
+                            foreach (Curve cl in cell.diagonals)
+                            {
+                                centreLines.Append(new GH_Curve(cl.ToNurbsCurve()), path);
+                            }
                             foreach (Point3d p in cell.nodes)
                             {
                                 nodes.Append(new GH_Point(p), path);

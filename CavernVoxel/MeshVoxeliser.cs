@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
 using Rhino;
-
+using System.IO;
 
 namespace CavernVoxel
 {
@@ -32,7 +32,48 @@ namespace CavernVoxel
             gridPlane = refPlane;
             //findBBox();
             setupSpans(startBay, endBay);
-            
+            moduleSchedule(startBay);
+        }
+        private void moduleSchedule(int startbay)
+        {
+            int bayNum = 0;
+            int modulesCount = 0;
+            string section = startbay.ToString();
+            if (startbay < 10) section = "0" + section;
+            StreamWriter sw = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\"+section+"modules.csv");
+            sw.WriteLine("module code, type, disjoint cave panel");
+            foreach (StructuralSpan sp in structuralSpans)
+            {
+                foreach (StructuralBay sb in sp.structuralBays)
+                {
+                    int side = 0;
+                    foreach (List<StructuralCell> sc in sb.voxels)
+                    {
+                        foreach (StructuralCell c in sc)
+                        {
+                            if (c.cellType != StructuralCell.CellType.InsideCell && c.cellType != StructuralCell.CellType.Undefined)
+                            {
+                                
+                                string bay = bayNum.ToString();
+                                
+                                if (bayNum < 10) bay = "0" + bay;
+                                string mCode = section + "_" + bay + "_" + side+c.id[0] + c.id[1];
+                                int flag = 0;
+                                if(c.cellType== StructuralCell.CellType.SkinCell) flag = c.caveFace.DisjointMeshCount - 1;
+                                sw.WriteLine(mCode + "," + c.cellType.ToString() + "," + flag);
+                                modulesCount++;
+                            }
+                        }
+                        side++;
+                    }
+                    bayNum++;
+                }
+            }
+            sw.Close();
+
+            StreamWriter sw2 = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\modulesSummary.csv",true);
+            sw2.WriteLine("section" + section + ",total bays:,"+bayNum+",total modules all types:," + modulesCount);
+            sw2.Close();
         }
         private void setupSpans(int start, int end)
         {

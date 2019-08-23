@@ -97,8 +97,11 @@ namespace CavernVoxel
         }
         private void writeMeshes(DXFwriter writer, List<Mesh> meshes, string layer, int col)
         {
+            Random r = new Random();
+            
             foreach(Mesh m in meshes)
             {
+                if (layer == "cavepanels") col = 12+r.Next(24)*10;
                 if (m != null)
                 {
                     writer.DXFPolyfaceMesh(m, layer,col);

@@ -16,6 +16,7 @@ namespace CavernVoxel
         public Brep trimInnerBoundary;
         public List<Curve> untrimmedCentreLines = new List<Curve>();
         public List<Curve> centreLines = new List<Curve>();
+        public List<Curve> diagonals = new List<Curve>();
         public Mesh caveFace = new Mesh();
         public Brep millingVolume = new Brep();
         public CellType cellType;
@@ -61,6 +62,7 @@ namespace CavernVoxel
             //getBackFrontPlanes();
             trimStructure();
             findNodesTrimCentreLines();
+            intersectDiagonals();
             //trimBoundary = splitHalfSpace(frontPlane, boundary);
             //millingVolume = trimOutMillingVolume();
         }
@@ -75,6 +77,13 @@ namespace CavernVoxel
             {
                 untrimmedCentreLines.Add(be.DuplicateCurve());
             }
+            //add al diagonals
+            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[2].Location).ToNurbsCurve());
+            diagonals.Add(new Line(innerBoundary.Vertices[2].Location, innerBoundary.Vertices[5].Location).ToNurbsCurve());
+            diagonals.Add(new Line(innerBoundary.Vertices[2].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
+            diagonals.Add(new Line(innerBoundary.Vertices[5].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
+            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[5].Location).ToNurbsCurve());
+            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
         }
         private Brep trimOutMillingVolume()
         {
@@ -95,10 +104,36 @@ namespace CavernVoxel
             Brep capped =   millingVol.CapPlanarHoles(Rhino.RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
             return capped;
         }
+        private void intersectDiagonals()
+        {
+            
+            for(int c=0;c<diagonals.Count;c++)
+            {
+                if (curveIsInsideMesh(diagonals[c], caveFace))
+                {
+                    diagonals.Remove(diagonals[c]);
+                    c--;
+                }
+                else
+                {
+                    Line edge = new Line(diagonals[c].PointAtStart, diagonals[c].PointAtEnd);
+                    int[] faceIds;
+                    Point3d[] points = Rhino.Geometry.Intersect.Intersection.MeshLine(caveFace, edge, out faceIds);
+                    if (points.Length > 0)
+                    {
+                        diagonals.Remove(diagonals[c]);
+                        c--;
+                    }
+                }
+               
+            }
+           
+        }
         private void findNodesTrimCentreLines()
         {
             foreach(Curve c in untrimmedCentreLines)
             {
+                
                 Line edge = new Line(c.PointAtStart, c.PointAtEnd);
                 int[] faceIds;
                 Point3d[] points = Rhino.Geometry.Intersect.Intersection.MeshLine(caveFace, edge, out faceIds);
