@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Rhino.Geometry;
 using Rhino;
 using System.IO;
+using Rhino.Display;
 
 namespace CavernVoxel
 {
@@ -15,9 +16,10 @@ namespace CavernVoxel
         List<Mesh> meshesToVoxelise;
         
         public List<StructuralSpan> structuralSpans = new List<StructuralSpan>();
-        VoxelParameters parameters;
+        public VoxelParameters parameters;
+        public Text3d sectionNum;
+        Plane gridPlane;
 
-         Plane gridPlane;
         double width = 60000;
         double length;
         double height =40000;
@@ -25,55 +27,22 @@ namespace CavernVoxel
         Mesh baseCell = new Mesh();
         public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
         {
-            parameters = new VoxelParameters(x, y, z, memberDim, explore);
+            parameters = new VoxelParameters(x, y, z, memberDim, explore,startBay);
             meshesToVoxelise = meshes;
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
             meshesToVoxelise.ForEach(m => m.FaceNormals.ComputeFaceNormals());
             gridPlane = refPlane;
+            setText(startBay);
             //findBBox();
             setupSpans(startBay, endBay);
-            moduleSchedule(startBay);
+            VoxelDocumenter.moduleSchedule(this);
         }
-        private void moduleSchedule(int startbay)
+        private void setText(int num)
         {
-            int bayNum = 0;
-            int modulesCount = 0;
-            string section = startbay.ToString();
-            if (startbay < 10) section = "0" + section;
-            StreamWriter sw = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\"+section+"modules.csv");
-            sw.WriteLine("module code, type, disjoint cave panel");
-            foreach (StructuralSpan sp in structuralSpans)
-            {
-                foreach (StructuralBay sb in sp.structuralBays)
-                {
-                    int side = 0;
-                    foreach (List<StructuralCell> sc in sb.voxels)
-                    {
-                        foreach (StructuralCell c in sc)
-                        {
-                            if (c.cellType != StructuralCell.CellType.InsideCell && c.cellType != StructuralCell.CellType.Undefined)
-                            {
-                                
-                                string bay = bayNum.ToString();
-                                
-                                if (bayNum < 10) bay = "0" + bay;
-                                string mCode = section + "_" + bay + "_" + side+c.id[0] + c.id[1];
-                                int flag = 0;
-                                if(c.cellType== StructuralCell.CellType.SkinCell) flag = c.caveFace.DisjointMeshCount - 1;
-                                sw.WriteLine(mCode + "," + c.cellType.ToString() + "," + flag);
-                                modulesCount++;
-                            }
-                        }
-                        side++;
-                    }
-                    bayNum++;
-                }
-            }
-            sw.Close();
-
-            StreamWriter sw2 = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\modulesSummary.csv",true);
-            sw2.WriteLine("section" + section + ",total bays:,"+bayNum+",total modules all types:," + modulesCount);
-            sw2.Close();
+            Plane txtPln = new Plane(gridPlane.Origin+gridPlane.XAxis*width,gridPlane.XAxis,gridPlane.YAxis);
+            string sNum = num.ToString();
+            if (num < 10) sNum = "0" + sNum;
+            sectionNum = new Text3d(sNum,txtPln,1000);
         }
         private void setupSpans(int start, int end)
         {
@@ -94,7 +63,7 @@ namespace CavernVoxel
                 Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
                 if (slice != null)
                 {
-                    structuralSpans.Add(new StructuralSpan(parameters,slice,boxPln));
+                    structuralSpans.Add(new StructuralSpan(parameters,slice,boxPln,y));
                 }
             }
         }

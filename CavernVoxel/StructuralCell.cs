@@ -9,7 +9,7 @@ namespace CavernVoxel
 {
     class StructuralCell
     {
-        public int[] id;
+        public string id;
         public Mesh boundary;
         
         public Brep innerBoundary;
@@ -31,7 +31,7 @@ namespace CavernVoxel
         Plane backPlane;
         Vector3d toOutside;
         double memberSize;
-        public StructuralCell(Mesh bound, double memberDim,int[] ID,bool filler)
+        public StructuralCell(Mesh bound, double memberDim,string ID,bool filler)
         {
             boundary = bound;
             memberSize = memberDim;
@@ -42,7 +42,7 @@ namespace CavernVoxel
             centreLines = untrimmedCentreLines;
             
         }
-        public StructuralCell (Mesh bound,double memberDim,Mesh mesh, int[] ID,bool filler)
+        public StructuralCell (Mesh bound,double memberDim,Mesh mesh, string ID,bool filler)
         {
             cellType = CellType.SkinCell;
             boundary = bound;

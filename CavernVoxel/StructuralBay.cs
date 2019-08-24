@@ -20,8 +20,8 @@ namespace CavernVoxel
         VoxelParameters parameters;
         bool leader = false;
         KDTree<double> tree;
-        
-        public StructuralBay(Mesh sliceToVoxelise, Plane minpln,Plane maxpln, VoxelParameters voxelParameters,bool firstBay)
+        public int baynum;
+        public StructuralBay(Mesh sliceToVoxelise, Plane minpln,Plane maxpln, VoxelParameters voxelParameters,bool firstBay, int num)
         {
             voxels.Add(new List<StructuralCell>());
             voxels.Add(new List<StructuralCell>());
@@ -30,6 +30,7 @@ namespace CavernVoxel
             maxPlane = maxpln;
             parameters = voxelParameters;
             leader = firstBay;
+            baynum = num;
             if (!parameters.explore) voxelise();
         }
         public StructuralBay(StructuralBay previous)
@@ -39,6 +40,7 @@ namespace CavernVoxel
             leader = false;
             slice = previous.slice;
             parameters = previous.parameters;
+            baynum = previous.baynum + 1;
             minPlane = previous.minPlane;
             maxPlane = previous.maxPlane;
             //shift in the y direction
@@ -224,22 +226,35 @@ namespace CavernVoxel
             
             bool intersect = false;
             Mesh caveface = MeshTools.splitMeshWithMesh(slice, trimCell);
-            
             if (caveface != null) intersect = true;
-
+            string mCode = genMCode(ab,x,z);
             if (intersect)
             {
                 MeshTools.matchOrientation(slice, ref caveface);
-                StructuralCell structCell = new StructuralCell(testCell, parameters.memberSize, caveface.DuplicateMesh(),new int[] { x,z},filler);
+                StructuralCell structCell = new StructuralCell(testCell, parameters.memberSize, caveface.DuplicateMesh(),mCode,filler);
                 if (ab == "a") voxels[0].Add(structCell);
                 else voxels[1].Add(structCell);
             }
             else
             {
-                StructuralCell structCell = new StructuralCell(testCell, parameters.memberSize, new int[] { x, z },filler);
+                StructuralCell structCell = new StructuralCell(testCell, parameters.memberSize, mCode,filler);
                 if (ab == "a") voxels[0].Add(structCell);
                 else voxels[1].Add(structCell);
             }
+        }
+        private string genMCode(string ab,int x, int z)
+        {
+            string section = parameters.sectionNum.ToString();
+            if (parameters.sectionNum < 10) section = "0" + section;
+            
+            string side = "0";
+            if (ab == "b") side = "1";
+            
+            string bay = baynum.ToString();
+            if (baynum < 10) bay = "0" + bay;
+
+            string mCode = section + "_" + bay + "_" + side + "_" + x + "_" + z;
+            return mCode;
         }
         private Mesh makeCuboid(Plane pln,double width, Interval depth,double height)
         {

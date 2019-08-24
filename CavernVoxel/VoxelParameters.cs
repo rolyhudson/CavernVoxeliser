@@ -18,13 +18,15 @@ namespace CavernVoxel
         public int unitsXa;
         public int unitsXb;
         public double fillerCellX;
-        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode)
+        public int sectionNum;
+        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum)
         {
             xCell = x;
             yCell = y;
             zCell = z;
             explore = exploreMode;
             memberSize = memberDim;
+            sectionNum = sectNum;
         }
     }
 }

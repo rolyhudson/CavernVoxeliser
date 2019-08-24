@@ -81,6 +81,7 @@ namespace CavernVoxel
             int startBay = 0;
             bool exploreMode=true;
             Plane refPlane = new Plane();
+            
             if (!DA.GetDataList(0, meshes)) return;
             if (!DA.GetData(1, ref xcell)) return;
             if (!DA.GetData(2, ref ycell)) return;
@@ -91,7 +92,8 @@ namespace CavernVoxel
             if (!DA.GetData(7, ref exploreMode)) return;
             DA.GetData(8, ref refPlane);
             MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay, startBay + numBays,exploreMode, refPlane);
-
+            VoxelDocumenter vDoc = new VoxelDocumenter();
+            vDoc.writeSection(mvox);
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> skinCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> verticalSupportCells = new DataTree<StructuralCell>();

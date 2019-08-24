@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Rhino.Display;
 
 namespace CavernVoxel
 {
@@ -14,22 +15,42 @@ namespace CavernVoxel
         public Mesh slice = new Mesh();
         public List<Line> xGrid = new List<Line>();
         public List<Line> yGrid = new List<Line>();
+        public List<Line> baseGrid = new List<Line>();
+        public List<Text3d> txt = new List<Text3d>();
         VoxelParameters parameters;
         public Plane minPlane;
         public Plane maxPlane;
         Plane referencePlane;
         double fillerMinimum = 400;
-        public StructuralSpan(VoxelParameters vParams,Mesh m,Plane plane)
+        int bayNum;
+        public StructuralSpan(VoxelParameters vParams,Mesh m,Plane plane,int firstBay)
         {
             parameters = vParams;
             slice = m;
             referencePlane = plane;
+            bayNum = firstBay;
+            setBaseGrid();
             findVerticalFit();
             findHorizFit();
-            structuralBays.Add(new StructuralBay(slice, minPlane, maxPlane, parameters, true));
+            structuralBays.Add(new StructuralBay(slice, minPlane, maxPlane, parameters, true,firstBay));
             structuralBays.Add(new StructuralBay(structuralBays[0]));
             setLinkElements();
             setGrid();
+        }
+        private void setBaseGrid()
+        {
+            for (int y = 0; y < 2; y++)
+            {
+                Vector3d shiftY = referencePlane.YAxis * y * parameters.yCell;
+                //add the base grid line
+                Line bGrid = new Line(referencePlane.Origin + shiftY, referencePlane.XAxis, 60000);
+                baseGrid.Add(bGrid);
+                Plane txtPn = new Plane(bGrid.From, referencePlane.XAxis, referencePlane.YAxis);
+                string baynum = (bayNum + y).ToString();
+                if (bayNum < 10) baynum = "0" + baynum;
+                Text3d text3D = new Text3d("bay_" + baynum, txtPn, 500);
+                txt.Add(text3D);
+            }
         }
         private void setGrid()
         {
@@ -37,6 +58,7 @@ namespace CavernVoxel
             {
                 Vector3d shiftY = minPlane.YAxis * y * parameters.yCell;
                 Line grid1 = new Line(minPlane.Origin+shiftY, maxPlane.Origin + shiftY);
+                
                 xGrid.Add(grid1);
                 if (y < 2)
                 {
@@ -51,6 +73,7 @@ namespace CavernVoxel
                     {
                         yGridLines(x, y, maxPlane, false);
                     }
+                    
                 }
             }
         }

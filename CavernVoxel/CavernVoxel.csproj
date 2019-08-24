@@ -84,6 +84,7 @@
     <Compile Include="StructuralBay.cs" />
     <Compile Include="StructuralCell.cs" />
     <Compile Include="StructuralSpan.cs" />
+    <Compile Include="VoxelDocumenter.cs" />
     <Compile Include="VoxelParameters.cs" />
     <Compile Include="VoxelToDXF.cs" />
   </ItemGroup>
