@@ -19,6 +19,8 @@ namespace CavernVoxel
         public int unitsXb;
         public double fillerCellX;
         public int sectionNum;
+        public double width;
+        public double height;
         public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum)
         {
             xCell = x;
@@ -27,6 +29,8 @@ namespace CavernVoxel
             explore = exploreMode;
             memberSize = memberDim;
             sectionNum = sectNum;
+            width = 60000;
+            height = 40000;
         }
     }
 }

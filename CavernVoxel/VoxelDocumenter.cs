@@ -86,10 +86,33 @@ namespace CavernVoxel
             addLayers(file, layers);
             return file;
         }
-        public void makeBayDrawing(File3dm file)
+        private void makeBayView(File3dm file,StructuralBay bay)
         {
             //File3dm file = setupFile();
+            RhinoViewport viewport = new RhinoViewport();
+            viewport.SetProjection(DefinedViewportProjection.Front, "bay_"+bay.baynum.ToString()+"section", false);
+            
+            Vector3d shiftTarget = bay.maxPlane.Origin - bay.minPlane.Origin;
 
+            file.AllViews.Add(new ViewInfo(viewport));
+            //shift to mid point of module
+            Plane plnA = new Plane(bay.minPlane.Origin + bay.minPlane.YAxis * bay.parameters.yCell/2, bay.minPlane.YAxis);
+            
+            Plane plnB = new Plane(plnA);
+            //shift to end of module
+            plnB.Origin = plnB.Origin + bay.minPlane.YAxis * bay.parameters.yCell;
+            plnB.Flip();
+            //set camera and target
+            viewport.SetCameraTarget(bay.maxPlane.Origin + shiftTarget / 2 + Vector3d.ZAxis * bay.parameters.unitsZ / 2 * bay.parameters.zCell, false);
+            viewport.SetCameraLocation(viewport.CameraTarget + bay.minPlane.YAxis * -50000,false);
+            //Clip plane A
+            file.Objects.AddClippingPlane(plnA,bay.parameters.width,bay.parameters.height,viewport.Id);
+            //Clip plane B
+            file.Objects.AddClippingPlane(plnB, bay.parameters.width, bay.parameters.height, viewport.Id);
+            //make a layout
+            //add detail view
+            //set detail view viewport to perpendicular to clip plane
+            //set clip planes only active in this view
         }
         public void writeSection(MeshVoxeliser mvox)
         {
@@ -114,6 +137,7 @@ namespace CavernVoxel
                 foreach(Text3d text in sp.txt) file.Objects.AddText(text,attAnnotation);
                 foreach (StructuralBay sb in sp.structuralBays)
                 {
+                    makeBayView(file, sb);
                     foreach (List<StructuralCell> sc in sb.voxels)
                     {
                         foreach (StructuralCell c in sc)

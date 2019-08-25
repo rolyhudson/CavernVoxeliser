@@ -17,7 +17,7 @@ namespace CavernVoxel
         public Plane minPlane;
         public Plane maxPlane;
         Mesh slice = new Mesh();
-        VoxelParameters parameters;
+        public VoxelParameters parameters;
         bool leader = false;
         KDTree<double> tree;
         public int baynum;

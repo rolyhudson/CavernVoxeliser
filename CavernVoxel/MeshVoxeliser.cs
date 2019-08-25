@@ -19,10 +19,8 @@ namespace CavernVoxel
         public VoxelParameters parameters;
         public Text3d sectionNum;
         Plane gridPlane;
-
-        double width = 60000;
         double length;
-        double height =40000;
+        
         
         Mesh baseCell = new Mesh();
         public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
@@ -39,7 +37,7 @@ namespace CavernVoxel
         }
         private void setText(int num)
         {
-            Plane txtPln = new Plane(gridPlane.Origin+gridPlane.XAxis*width,gridPlane.XAxis,gridPlane.YAxis);
+            Plane txtPln = new Plane(gridPlane.Origin+gridPlane.XAxis* parameters.width,gridPlane.XAxis,gridPlane.YAxis);
             string sNum = num.ToString();
             if (num < 10) sNum = "0" + sNum;
             sectionNum = new Text3d(sNum,txtPln,1000);
@@ -58,7 +56,7 @@ namespace CavernVoxel
                 Point3d origin = basePt + shiftY;
                 Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
                 //containing box with allowance in x and z directions
-                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, width + parameters.xCell / 10), new Interval(0, parameters.yCell * 2), new Interval(-parameters.zCell / 10, height + parameters.zCell / 10));
+                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell * 2), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
                 Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
                 Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
                 if (slice != null)
@@ -82,9 +80,9 @@ namespace CavernVoxel
                 minBBoxPln = gridPlane;
                 minBBoxRot = Vector3d.VectorAngle(Vector3d.XAxis, gridPlane.XAxis);
             }
-            width = minBBox.Max.X - minBBox.Min.X;
+            parameters.width = minBBox.Max.X - minBBox.Min.X;
             length = minBBox.Max.Y - minBBox.Min.Y;
-            height = minBBox.Max.Z - minBBox.Min.Z;
+            parameters.height = minBBox.Max.Z - minBBox.Min.Z;
             //Transform xform = Transform.PlaneToPlane(Plane.WorldXY, minBBoxPln);
             //Point3d origin = minBBox.Min;
             //origin.Transform(xform);
