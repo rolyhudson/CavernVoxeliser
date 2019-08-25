@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,8 @@ namespace CavernVoxel
         public bool fillerCell;
         
         //plane normals point to out side mesh
-        Plane midPlane;
+        public Plane midPlane;
+        public Color displayColor;
         Plane frontPlane;
         Plane backPlane;
         Vector3d toOutside;
@@ -34,13 +36,23 @@ namespace CavernVoxel
         public StructuralCell(Mesh bound, double memberDim,string ID,bool filler)
         {
             boundary = bound;
+            
             memberSize = memberDim;
             cellType = CellType.Undefined;
             id = ID;
             fillerCell = filler;
+            setColor();
             setInnerBound();
             centreLines = untrimmedCentreLines;
             
+        }
+        private void setColor()
+        {
+            Random r = new Random();
+            int red = r.Next(255);
+            int green = r.Next(255);
+            int blue = r.Next(255);
+            displayColor = Color.FromArgb(red, green, blue);
         }
         public StructuralCell (Mesh bound,double memberDim,Mesh mesh, string ID,bool filler)
         {
@@ -51,6 +63,7 @@ namespace CavernVoxel
             caveFace = mesh;
             id = ID;
             fillerCell = filler;
+            setColor();
             setInnerBound();
             trimCell();
         }
