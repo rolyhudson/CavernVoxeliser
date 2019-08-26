@@ -32,7 +32,7 @@ namespace CavernVoxel
             gridPlane = refPlane;
             setText(startBay);
             //findBBox();
-            setupSpans(startBay, endBay);
+            setupSpans(startBay,endBay);
             VoxelDocumenter.moduleSchedule(this);
         }
         private void setText(int num)
@@ -42,14 +42,10 @@ namespace CavernVoxel
             if (num < 10) sNum = "0" + sNum;
             sectionNum = new Text3d(sNum,txtPln,1000);
         }
-        private void setupSpans(int start, int end)
+        private void setupSpans(int start,int end)
         {
-            int unitsY = end - start;
-            if (start % 2 != 0) start = start - 1;
-            if (end > unitsY) end = unitsY;
-            if (start > unitsY) { start = unitsY - 1; end = unitsY; }
-            
-            for (int y = start; y < end; y+=2)//unitsY
+
+            for (int y = 0; y < end; y+=2)//unitsY
             {
                 Vector3d shiftY = gridPlane.YAxis * y * parameters.yCell;
                 Point3d basePt = new Point3d(gridPlane.OriginX, gridPlane.OriginY, gridPlane.OriginZ);

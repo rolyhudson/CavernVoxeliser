@@ -27,10 +27,13 @@ namespace CavernVoxel
         public static void moduleSchedule(MeshVoxeliser mvox)
         {
             int bayNum = 0;
+            int skinModuleCount = 0;
+            int verticalModuleCount = 0;
+            int perimeterModuleCount = 0;
             int modulesCount = 0;
-            string section = mvox.parameters.sectionNum.ToString();
-            if (mvox.parameters.sectionNum < 10) section ="0"+ section;
-            StreamWriter sw = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\" + section + "modules.csv");
+            string cavepart = mvox.parameters.sectionNum.ToString();
+            if (mvox.parameters.sectionNum < 10) cavepart = "0"+ cavepart;
+            StreamWriter sw = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\cavepart" + cavepart + "modulesSchedule.csv");
             sw.WriteLine("module code, type, disjoint cave panel");
             foreach (StructuralSpan sp in mvox.structuralSpans)
             {
@@ -40,6 +43,9 @@ namespace CavernVoxel
                     {
                         foreach (StructuralCell c in sc)
                         {
+                            if (c.cellType == StructuralCell.CellType.SkinCell) skinModuleCount++;
+                            if (c.cellType == StructuralCell.CellType.VerticalFillCell) verticalModuleCount++;
+                            if (c.cellType == StructuralCell.CellType.PerimeterCell) perimeterModuleCount++;
                             if (c.cellType != StructuralCell.CellType.InsideCell && c.cellType != StructuralCell.CellType.Undefined)
                             {
 
@@ -55,8 +61,10 @@ namespace CavernVoxel
             }
             sw.Close();
 
-            StreamWriter sw2 = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\modulesSummary.csv", true);
-            sw2.WriteLine("section" + section + ",total bays:," + bayNum + ",total modules all types:," + modulesCount);
+            StreamWriter sw2 = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\allModulesSummary.csv", true);
+            sw2.WriteLine("section" + cavepart + ",total bays:," + bayNum + ",total modules all types:," + modulesCount +
+                ",cavern intersection modules:," + skinModuleCount + ",perimeter modules:," + perimeterModuleCount +
+                ",vertical support modules:," + verticalModuleCount);
             sw2.Close();
         }
         private void addLayers(File3dm file,List<string> layers)
@@ -284,12 +292,13 @@ namespace CavernVoxel
             file.Objects.AddClippingPlane(b, w, h, new List<Guid> { viewport.Id }, attClippingplanes);
             
         }
-        private void addcavepanels2d(List<StructuralCell> scs,File3dm file,Plane plnA)
+        private void addcavepanels2d(List<StructuralCell> scs,File3dm file,Plane plnA,double minX)
         {
             int col = 0;
             int row = 0;
-            int pWidth = 35000;
+            double pWidth = minX+2000;
             Vector3d shift = new Vector3d(plnA.Origin);
+            shift.Z = shift.Z - 100;
             Vector3d panelShift = new Vector3d(pWidth, 0, 0);
             foreach (StructuralCell sc in scs)
             {
@@ -301,18 +310,18 @@ namespace CavernVoxel
                         {
                             attCavepanels.ObjectColor = sc.displayColor;
                             panelShift = new Vector3d(col * 2500, row * 2500, 0);
-                            panelShift.X = panelShift.X + pWidth / 2;
+                            panelShift.X = panelShift.X + pWidth;
                             Plane txtpln = Plane.WorldXY;
                             txtpln.Transform(Transform.Translation(shift+panelShift));
 
-                            Text3d modulecode = new Text3d(sc.id, txtpln, 100);
+                            Text3d modulecode = new Text3d(sc.id, txtpln,200);
                             var g = file.Objects.AddText(modulecode, attAnnotation);
                             Mesh cavepanel2d = new Mesh();
                             cavepanel2d.Vertices.AddVertices(mapAndTranslatePts(sc.midPlane, sc.caveFace.Vertices.ToPoint3dArray().ToList(), shift+panelShift));
                             cavepanel2d.Faces.AddFaces(sc.caveFace.Faces);
                             file.Objects.AddMesh(cavepanel2d, attCavepanels);
                             col++;
-                            if (col > 5)
+                            if (col > 10)
                             {
                                 col = 0;
                                 row++;
@@ -328,10 +337,12 @@ namespace CavernVoxel
             File3dm file = setupFile();
             Plane mapFrom = new Plane(mvox.structuralSpans[0].minPlane.Origin, mvox.structuralSpans[0].minPlane.XAxis, Vector3d.ZAxis);
             Transform transform = Transform.PlaneToPlane(mapFrom,Plane.WorldXY);
+            
             foreach (StructuralSpan sp in mvox.structuralSpans)
             {
                 foreach (StructuralBay sb in sp.structuralBays)
                 {
+                    double maxX = 0.0;
                     Point3d origin = new Point3d(sb.minPlane.Origin);
                     Plane plnA = new Plane(origin + sb.minPlane.YAxis * sb.parameters.yCell / 2, sb.minPlane.XAxis, Vector3d.ZAxis);
                     //shift to end of module
@@ -342,7 +353,7 @@ namespace CavernVoxel
                     string baytitle = sb.baynum.ToString();
                     if (sb.baynum < 10) baytitle = "0" + baytitle;
                     setClippingPlanes(plnA, plnB, file, "bay_" + baytitle, sb.parameters.width, sb.parameters.height);
-                    Text3d title = new Text3d("bay_" + baytitle, new Plane(plnA.Origin,Vector3d.ZAxis), 300);
+                    Text3d title = new Text3d("bay_" + baytitle, new Plane(plnA.Origin,Vector3d.ZAxis), 500);
                     file.Objects.AddText(title, attAnnotation);
                     
                     
@@ -362,29 +373,29 @@ namespace CavernVoxel
                                 foreach (Curve cl in c.centreLines)
                                 {
                                     cl.Transform(transform);
+                                    if (cl.PointAtStart.X > maxX) maxX = cl.PointAtStart.X;
                                     file.Objects.AddCurve(cl, attCentrelines);
                                 }
-
                                 foreach (Curve d in c.diagonals)
                                 {
                                     d.Transform(transform);
                                     file.Objects.AddCurve(d, attDiagonals);
                                 }
-                                if (c.GSAmesh != null)
-                                {
-                                    c.GSAmesh.Transform(transform);
-                                    file.Objects.AddMesh(c.GSAmesh, attGsamesh);
-                                }
+                                //if (c.GSAmesh != null)
+                                //{
+                                //    c.GSAmesh.Transform(transform);
+                                //    file.Objects.AddMesh(c.GSAmesh, attGsamesh);
+                                //}
 
                             }
                         }
                     }
-                    addcavepanels2d(sb.voxels.SelectMany(x => x).ToList(), file, plnA);
+                    addcavepanels2d(sb.voxels.SelectMany(x => x).ToList(), file, plnA,maxX);
                 }
             }
-            string section = mvox.parameters.sectionNum.ToString();
-            if (mvox.parameters.sectionNum < 10) section = "0" + section;
-            file.Write(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\section" + section + "_ClippedSections.3dm", 5);
+            string cavepart = mvox.parameters.sectionNum.ToString();
+            if (mvox.parameters.sectionNum < 10) cavepart = "0" + cavepart;
+            file.Write(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\cavepart" + cavepart + "_BaySections.3dm", 5);
         }
         public void writeSection3d(MeshVoxeliser mvox)
         {
@@ -422,9 +433,9 @@ namespace CavernVoxel
             viewport.SetProjection(DefinedViewportProjection.Perspective, "cavern view", false);
             viewport.ZoomExtents();
             file.AllViews.Add(new ViewInfo(viewport));
-            string section = mvox.parameters.sectionNum.ToString();
-            if (mvox.parameters.sectionNum < 10) section = "0" + section;
-            file.Write(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\sections\section"+section+ "_3d.3dm", 5);
+            string cavepart = mvox.parameters.sectionNum.ToString();
+            if (mvox.parameters.sectionNum < 10) cavepart = "0" + cavepart;
+            file.Write(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\cavepart" + cavepart + "_3d.3dm", 5);
         }
         
     }
