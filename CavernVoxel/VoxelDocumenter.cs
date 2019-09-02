@@ -24,6 +24,7 @@ namespace CavernVoxel
         ObjectAttributes attGsamesh;
         ObjectAttributes attAnnotation;
         ObjectAttributes attClippingplanes;
+        ObjectAttributes attBuildingGrid;
         public static void moduleSchedule(MeshVoxeliser mvox)
         {
             int bayNum = 0;
@@ -70,7 +71,7 @@ namespace CavernVoxel
         private void addLayers(File3dm file,List<string> layers)
         {
             int index = 0;
-            List<Color> colors =new List<Color> {Color.Black,Color.DarkBlue,Color.DarkGray,Color.DarkGray,Color.DarkOliveGreen,Color.DarkOrange,Color.DarkOrchid,Color.DarkSeaGreen };
+            List<Color> colors =new List<Color> {Color.Black,Color.DarkBlue,Color.DarkGray,Color.DarkGray,Color.DarkOliveGreen,Color.DarkOrange,Color.DarkOrchid,Color.DarkSeaGreen,Color.DarkGoldenrod };
             foreach(string l in layers)
             {
                 Layer layer = new Layer();
@@ -102,6 +103,7 @@ namespace CavernVoxel
             layers.Add("diagonals");
             layers.Add("annotation");
             layers.Add("clippingplanes");
+            layers.Add("buildinggrid");
 
             File3dm file = new File3dm();
             addLayers(file, layers);
@@ -119,6 +121,7 @@ namespace CavernVoxel
             attGsamesh = objectAttributes.Find(o => o.Name == "gsamesh");
             attAnnotation = objectAttributes.Find(o => o.Name == "annotation");
             attClippingplanes = objectAttributes.Find(o => o.Name == "clippingplanes");
+            attBuildingGrid = objectAttributes.Find(o => o.Name == "buildinggrid");
         }
         private bool curveInHalfSpace(Curve c,Plane p)
         {
@@ -397,10 +400,11 @@ namespace CavernVoxel
             if (mvox.parameters.sectionNum < 10) cavepart = "0" + cavepart;
             file.Write(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\cavepart" + cavepart + "_BaySections.3dm", 5);
         }
-        public void writeSection3d(MeshVoxeliser mvox)
+
+        public void writeSection3d(MeshVoxeliser mvox, List<Curve> curvesToAdd)
         {
             File3dm file = setupFile();
-
+            foreach (Curve c in curvesToAdd) file.Objects.AddCurve(c, attBuildingGrid);
             file.Objects.AddText(mvox.sectionNum,attAnnotation);
             foreach (StructuralSpan sp in mvox.structuralSpans)
             {

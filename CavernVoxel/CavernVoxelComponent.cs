@@ -44,7 +44,7 @@ namespace CavernVoxel
             pManager.AddIntegerParameter("start bay", "sb", "", GH_ParamAccess.item, 10);
             pManager.AddBooleanParameter("explore mode", "em", "", GH_ParamAccess.item, true);
             pManager.AddPlaneParameter("reference plane", "rp", "", GH_ParamAccess.item);
-
+            pManager.AddCurveParameter("building grid", "bg", "", GH_ParamAccess.list);
             pManager[8].Optional = true;
         }
 
@@ -73,6 +73,7 @@ namespace CavernVoxel
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             List<Mesh> meshes = new List<Mesh>();
+            List<Curve> bldGrid = new List<Curve>();
             double xcell = 0;
             double ycell = 0;
             double zcell = 0;
@@ -91,11 +92,12 @@ namespace CavernVoxel
             if (!DA.GetData(6, ref startBay)) return;
             if (!DA.GetData(7, ref exploreMode)) return;
             DA.GetData(8, ref refPlane);
+            if (!DA.GetDataList(9, bldGrid)) return;
             MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay,numBays,exploreMode, refPlane);
             VoxelDocumenter vDoc = new VoxelDocumenter();
-            //vDoc.writeSection3d(mvox);
+            vDoc.writeSection3d(mvox,bldGrid);
             //vDoc.writeSection2d(mvox);
-            //vDoc.map3dToWorldXY(mvox);
+            vDoc.map3dToWorldXY(mvox);
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> skinCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> verticalSupportCells = new DataTree<StructuralCell>();
@@ -112,7 +114,7 @@ namespace CavernVoxel
             DA.SetDataTree(0, skinCells);
             DA.SetDataTree(1, perimeterCells);
             DA.SetDataTree(2, verticalSupportCells);
-            DA.SetDataTree(3, caveSlices);
+            //DA.SetDataTree(3, caveSlices);
             DA.SetDataTree(4, sectionBoxes);
             DA.SetDataTree(5, grid);
             DA.SetDataTree(6, links);
@@ -163,6 +165,7 @@ namespace CavernVoxel
         }
         private void getSlices(MeshVoxeliser mvox, ref GH_Structure<GH_Mesh> caveslices, ref GH_Structure<GH_Mesh> sectionboxes,ref GH_Structure<GH_Curve> grid,ref GH_Structure<GH_Curve> links)
         {
+            foreach (Mesh b in mvox.spanBoxes) sectionboxes.Append(new GH_Mesh(b));
             foreach (StructuralSpan sp in mvox.structuralSpans)
             {
                 caveslices.Append(new GH_Mesh(sp.slice));

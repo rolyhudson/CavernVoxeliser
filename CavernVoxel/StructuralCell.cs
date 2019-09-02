@@ -61,11 +61,20 @@ namespace CavernVoxel
             boundary.FaceNormals.ComputeFaceNormals();
             memberSize = memberDim;
             caveFace = mesh;
+            
             id = ID;
             fillerCell = filler;
-            setColor();
-            setInnerBound();
-            trimCell();
+            if (caveFace.Faces.Count == 0)
+            {
+                cellType = CellType.Undefined;
+            }
+            else
+            {
+                setColor();
+                setInnerBound();
+                trimCell();
+            }
+            
         }
         
         private void trimCell()
@@ -76,7 +85,7 @@ namespace CavernVoxel
             trimStructure();
             findNodesTrimCentreLines();
             intersectDiagonals();
-            //trimBoundary = splitHalfSpace(frontPlane, boundary);
+            
             //millingVolume = trimOutMillingVolume();
         }
         private void setInnerBound()

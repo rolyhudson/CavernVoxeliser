@@ -133,8 +133,34 @@ namespace CavernVoxel
             Box box = new Box(gridPlane, xInt, yInt, zInt);
             return box;
         }
-        
-        private Mesh splitHalfSpace(Plane pln, Mesh mesh)
+        public static Mesh splitTwoPlanes(Plane p1, Plane p2, Mesh m)
+        {
+            Mesh keep = new Mesh();
+            Mesh[] pieces = m.SplitDisjointPieces();
+            
+            foreach (Mesh p in pieces)
+            {
+                Mesh m1 = splitHalfSpace(p1, p);
+                Mesh m2 = new Mesh();
+                //if m1 failed use original with p2
+                if (m1 == null) m2 = splitHalfSpace(p2, p);
+                //if m1 is good try and split with p2
+                else m2 = splitHalfSpace(p2, m1);
+                //if m2 failed just keep m1
+                if (m2 == null && m1 != null)
+                {
+                    keep.Append(m1);
+                }
+                //otherwise keep m2
+                else
+                {
+                    if (m2 != null) keep.Append(m2);
+                }
+            }
+
+            return keep;
+        }
+        private static Mesh splitHalfSpace(Plane pln, Mesh mesh)
         {
             var splits = mesh.Split(pln);
             foreach (Mesh m in splits)
@@ -157,7 +183,7 @@ namespace CavernVoxel
                     return m;
                 }
             }
-            return mesh;
+            return null;
         }
         public static void writeMeshes(List<Mesh> meshes, string path, string file)
         {
