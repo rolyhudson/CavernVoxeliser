@@ -21,6 +21,7 @@ namespace CavernVoxel
         bool leader = false;
         KDTree<double> tree;
         public int baynum;
+        
         public StructuralBay(Mesh sliceToVoxelise, Plane minpln,Plane maxpln, VoxelParameters voxelParameters,bool firstBay, int num)
         {
             voxels.Add(new List<StructuralCell>());
@@ -31,6 +32,7 @@ namespace CavernVoxel
             parameters = voxelParameters;
             leader = firstBay;
             baynum = num;
+            
             if (!parameters.explore) voxelise();
         }
         public StructuralBay(StructuralBay previous)
@@ -212,7 +214,7 @@ namespace CavernVoxel
             Mesh trimCell = new Mesh();
             Interval trimYInterval = new Interval(-parameters.yCell /2, parameters.yCell);
             if (leader) trimYInterval = new Interval(-parameters.yCell, parameters.yCell / 2);
-           
+            
             if (filler)
             {
                 testCell = makeCuboid(cellpln, parameters.fillerCellX,new Interval(-parameters.yCell /2, parameters.yCell /2), parameters.zCell);

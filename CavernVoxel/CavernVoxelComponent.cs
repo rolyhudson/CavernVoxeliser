@@ -114,7 +114,7 @@ namespace CavernVoxel
             DA.SetDataTree(0, skinCells);
             DA.SetDataTree(1, perimeterCells);
             DA.SetDataTree(2, verticalSupportCells);
-            //DA.SetDataTree(3, caveSlices);
+            DA.SetDataTree(3, caveSlices);
             DA.SetDataTree(4, sectionBoxes);
             DA.SetDataTree(5, grid);
             DA.SetDataTree(6, links);

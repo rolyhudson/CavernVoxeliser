@@ -86,7 +86,8 @@ namespace CavernVoxel
                 {
                     facePlane.Flip();
                 }
-                trimmedMesh = splitHalfSpace(facePlane, trimmedMesh);
+                trimmedMesh = split(trimmedMesh, facePlane);
+                trimmedMesh.Vertices.CombineIdentical(true, true);
             }
             return trimmedMesh;
         }
@@ -135,56 +136,100 @@ namespace CavernVoxel
         }
         public static Mesh splitTwoPlanes(Plane p1, Plane p2, Mesh m)
         {
-            Mesh keep = new Mesh();
-            Mesh[] pieces = m.SplitDisjointPieces();
-            
-            foreach (Mesh p in pieces)
+            var m1 = split(m, p1);
+            m1.Vertices.CombineIdentical(true, true);
+            var m2 = split(m1, p2);
+            m2.Vertices.CombineIdentical(true, true);
+            return m2;
+        }
+        private static Mesh split(Mesh m, Plane p)
+        {
+            Mesh splitMesh = new Mesh();
+
+            foreach (MeshFace f in m.Faces)
             {
-                Mesh m1 = splitHalfSpace(p1, p);
-                Mesh m2 = new Mesh();
-                //if m1 failed use original with p2
-                if (m1 == null) m2 = splitHalfSpace(p2, p);
-                //if m1 is good try and split with p2
-                else m2 = splitHalfSpace(p2, m1);
-                //if m2 failed just keep m1
-                if (m2 == null && m1 != null)
+                var pts = getFacePoints(f, m);
+                if (pointsInsidePlane(pts, p))
                 {
-                    keep.Append(m1);
+                    addPointsAndFace(pts, ref splitMesh);
                 }
-                //otherwise keep m2
                 else
                 {
-                    if (m2 != null) keep.Append(m2);
+                    faceSplit(pts, p, ref splitMesh);
                 }
             }
-
-            return keep;
+            return splitMesh;
         }
-        private static Mesh splitHalfSpace(Plane pln, Mesh mesh)
+        private static void faceSplit(List<Point3d> pts, Plane pln, ref Mesh meshToAppend)
         {
-            var splits = mesh.Split(pln);
-            foreach (Mesh m in splits)
+            List<Point3d> newPts = new List<Point3d>();
+            for (int p = 0; p < pts.Count; p++)
             {
-                Point3d furthest = new Point3d();
-                double maxDist = 0;
-                foreach (Point3d p in m.Vertices)
+                if (pointInsidePlane(pts[p], pln))
                 {
-                    Point3d closest = pln.ClosestPoint(p);
-                    if (closest.DistanceTo(p) > maxDist)
-                    {
-                        furthest = p;
-                        maxDist = closest.DistanceTo(p);
-                    }
-                }
+                    newPts.Add(pts[p]);
 
-                Vector3d v = furthest - pln.Origin;
-                if (Vector3d.VectorAngle(pln.Normal, v) < Math.PI / 2)
+                }
+                double t = 0;
+                Line l = new Line();
+                if (p == pts.Count - 1) l = new Line(pts[p], pts[0]);
+                else l = new Line(pts[p], pts[p + 1]);
+
+                Rhino.Geometry.Intersect.Intersection.LinePlane(l, pln, out t);
+
+                if (t > 0 && t < 1)
                 {
-                    return m;
+                    newPts.Add(l.PointAt(t));
                 }
             }
-            return null;
+            if (newPts.Count == 4 || newPts.Count == 3) addPointsAndFace(newPts, ref meshToAppend);
+            if (newPts.Count == 5) add5PointsAndFaces(newPts, ref meshToAppend);
         }
+        private static void add5PointsAndFaces(List<Point3d> pts, ref Mesh m)
+        {
+            int vcount = m.Vertices.Count;
+            m.Vertices.AddVertices(pts);
+            m.Faces.AddFace(vcount, vcount + 1, vcount + 2, vcount + 3);
+            m.Faces.AddFace(vcount + 3, vcount + 4, vcount);
+        }
+        private static void addPointsAndFace(List<Point3d> pts, ref Mesh m)
+        {
+            int vcount = m.Vertices.Count;
+            m.Vertices.AddVertices(pts);
+            if (pts.Count == 3)
+            {
+                m.Faces.AddFace(vcount, vcount + 1, vcount + 2);
+            }
+            else
+            {
+                m.Faces.AddFace(vcount, vcount + 1, vcount + 2, vcount + 3);
+            }
+        }
+        private static List<Point3d> getFacePoints(MeshFace f, Mesh m)
+        {
+            List<Point3d> pts = new List<Point3d>();
+            pts.Add(m.Vertices[f.A]);
+            pts.Add(m.Vertices[f.B]);
+            pts.Add(m.Vertices[f.C]);
+            pts.Add(m.Vertices[f.D]);
+            return pts;
+        }
+        private static bool pointsInsidePlane(List<Point3d> pts, Plane pln)
+        {
+            foreach (Point3d p in pts)
+            {
+                if (!pointInsidePlane(p, pln)) return false;
+            }
+            return true;
+        }
+        private static bool pointInsidePlane(Point3d p, Plane pln)
+        {
+            Vector3d v = p - pln.Origin;
+            if (Vector3d.VectorAngle(v, pln.Normal) < Math.PI / 2) return true;
+            else return false;
+        }
+
+
         public static void writeMeshes(List<Mesh> meshes, string path, string file)
         {
             StreamWriter results = new StreamWriter(path + "//" + file + ".js");

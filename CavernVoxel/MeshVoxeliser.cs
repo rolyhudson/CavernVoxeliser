@@ -56,19 +56,16 @@ namespace CavernVoxel
                 Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell * 2), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
                 Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
                 spanBoxes.Add(sectionVolume);
-                structuralSpans.Add(new StructuralSpan(parameters, meshesToVoxelise[0], boxPln, y));
+
+                Plane p1 = new Plane(origin, gridPlane.YAxis);
+                Plane p2 = new Plane(origin + gridPlane.YAxis * parameters.yCell * 2, gridPlane.YAxis * -1);
+
                 //Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
-                //if (slice != null)
-                //{
-                //    structuralSpans.Add(new StructuralSpan(parameters,slice,boxPln,y));
-                //}
-                //else
-                //{
-                //    Plane p1 = new Plane(origin, gridPlane.YAxis);
-                //    Plane p2 = new Plane(origin + gridPlane.YAxis*parameters.yCell*2, gridPlane.YAxis * -1);
-                //    Mesh s2 = MeshTools.splitTwoPlanes(p1, p2, meshesToVoxelise[0]);
-                //    if (s2 != null) structuralSpans.Add(new StructuralSpan(parameters, s2, boxPln, y));
-                //}
+                Mesh slice = MeshTools.splitTwoPlanes(p1, p2, meshesToVoxelise[0]);
+                if (slice != null)
+                {
+                    structuralSpans.Add(new StructuralSpan(parameters, slice, boxPln, y));
+                }
             }
         }
         private void findBBox()
