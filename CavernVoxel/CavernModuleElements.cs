@@ -41,6 +41,7 @@ namespace CavernVoxel
             pManager.AddMeshParameter("GSAMeshes", "gsam", "", GH_ParamAccess.tree);
             pManager.AddPointParameter("cell cenroids", "cc", "", GH_ParamAccess.tree);
             pManager.AddBooleanParameter("disjointed cave face", "df", "", GH_ParamAccess.tree);
+            pManager.AddTextParameter("id", "id", "", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -62,7 +63,7 @@ namespace CavernVoxel
                 GH_Structure<GH_Point> nodes = new GH_Structure<GH_Point>();
                 GH_Structure<GH_Point> centroids = new GH_Structure<GH_Point>();
                 GH_Structure<GH_Boolean> disjoint = new GH_Structure<GH_Boolean>();
-
+                GH_Structure<GH_String> ids = new GH_Structure<GH_String>();
                 for (int i = 0; i < obj.Branches.Count; i++)
                 {
                     GH_Path path = paths[i];
@@ -96,7 +97,7 @@ namespace CavernVoxel
                             }
                             cellscomplete.Append(new GH_Brep(cell.innerBoundary), path);
                             centroids.Append(new GH_Point(cell.centroid), path);
-
+                            ids.Append(new GH_String(cell.id), path);
                         }
 
                     }
@@ -109,6 +110,7 @@ namespace CavernVoxel
                 DA.SetDataTree(4, gsameshes);
                 DA.SetDataTree(5, centroids);
                 DA.SetDataTree(6, disjoint);
+                DA.SetDataTree(7, ids);
             }
         }
         /// <summary>

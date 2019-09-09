@@ -25,7 +25,7 @@ namespace CavernVoxel
         ObjectAttributes attAnnotation;
         ObjectAttributes attClippingplanes;
         ObjectAttributes attBuildingGrid;
-        public static void moduleSchedule(MeshVoxeliser mvox)
+        public void moduleSchedule(MeshVoxeliser mvox)
         {
             int bayNum = 0;
             int skinModuleCount = 0;
@@ -35,7 +35,7 @@ namespace CavernVoxel
             string cavepart = mvox.parameters.sectionNum.ToString();
             if (mvox.parameters.sectionNum < 10) cavepart = "0"+ cavepart;
             StreamWriter sw = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\cavepart" + cavepart + "modulesSchedule.csv");
-            sw.WriteLine("module code, type, disjoint cave panel");
+            sw.WriteLine("module code, type, disjoint cave panel, cave panel area");
             foreach (StructuralSpan sp in mvox.structuralSpans)
             {
                 foreach (StructuralBay sb in sp.structuralBays)
@@ -52,7 +52,7 @@ namespace CavernVoxel
 
                                 int flag = 0;
                                 if (c.cellType == StructuralCell.CellType.SkinCell) flag = c.caveFace.DisjointMeshCount - 1;
-                                sw.WriteLine(c.id + "," + c.cellType.ToString() + "," + flag);
+                                sw.WriteLine(c.id + "," + c.cellType.ToString() + "," + flag+","+c.caveFaceArea);
                                 modulesCount++;
                             }
                         }

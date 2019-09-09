@@ -34,7 +34,7 @@ namespace CavernVoxel
             setText(startBay);
             //findBBox();
             setupSpans(startBay,endBay);
-            VoxelDocumenter.moduleSchedule(this);
+            
         }
         private void setText(int num)
         {

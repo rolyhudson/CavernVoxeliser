@@ -88,19 +88,196 @@ namespace CavernVoxel
                 {
                     if (c.cellType==StructuralCell.CellType.Undefined)
                     {
-                        
                         //does it have a non support on one side
                         bool side = hasNonSupportCellLeftOrRight(sc, c);
                         //does it have a non support below
                         bool below = hasNonSupportCellBelow(sc, c);
                         if (side || below) c.cellType = StructuralCell.CellType.PerimeterCell;
-
-
                     }
                 }
             }
             tagInternalCells();
             setVerticalSupports();
+            structuralContinuity();
+        }
+        private void structuralContinuity()
+        {
+            foreach (List<StructuralCell> sc in voxels)
+            {
+                foreach (StructuralCell c in sc)
+                {
+                    if (c.cellType == StructuralCell.CellType.VerticalFillCell || c.cellType == StructuralCell.CellType.PerimeterCell)
+                    {
+                        if (hasDiagonalNeighbour(c))
+                        {
+                            //we need to find the diagonals and try to infill
+                            fillFromDiags(c);
+                        }
+                        if (c.fillerCell)
+                        {
+                            //check interface with other side
+                            interfaceContinuity(c);
+                        }
+                    }
+                }
+
+            }
+        }
+        private void interfaceContinuity(StructuralCell cell)
+        {
+            //get all the cells on the other side
+            var cells = voxels[0];
+            if(cell.side==0) cells = voxels[1];
+            //get the row of this cell
+            var row = cells.FindAll(c => c.rowNum == cell.rowNum).OrderByDescending(x=>x.colNum).ToList();
+            //closest is the first in the list
+            StructuralCell closest = row[0];
+            if (closest.cellType == StructuralCell.CellType.PerimeterCell || closest.cellType == StructuralCell.CellType.VerticalFillCell) return;
+            //get the column
+            var col = cells.FindAll(c => c.colNum == closest.colNum).ToList();
+            //get the skin cell if any
+            var skin = col.Find(x => x.cellType == StructuralCell.CellType.SkinCell);
+            var t = cells.Find(x => x.id == genMCode(0, 7, 2));
+            if(skin!=null)
+            {
+                int z = cell.rowNum;
+                string id = "";
+                if (skin.rowNum >= cell.rowNum)
+                {
+                    //add continuity on filler side upwards
+                    var cellsFill = voxels.SelectMany(x => x).ToList().FindAll(c => c.side == cell.side && c.colNum == cell.colNum);
+                    while (true)
+                    {
+                        z++;
+                        var next = cellsFill.Find(x=>x.id == genMCode(cell.side, cell.colNum, z));
+                        var pair = cells.Find(x => x.rowNum == z);
+                        next.cellType = StructuralCell.CellType.PerimeterCell;
+                        if (pair.cellType == StructuralCell.CellType.PerimeterCell || pair.cellType == StructuralCell.CellType.VerticalFillCell) break;
+                    }
+                    
+                }
+                else
+                {
+                    //add continuity on non filler side downwards
+                    while (true)
+                    {
+                        var pair = cells.Find(x => x.rowNum == z);
+                        if (pair.cellType == StructuralCell.CellType.PerimeterCell || pair.cellType == StructuralCell.CellType.VerticalFillCell) break;
+                        else pair.cellType = StructuralCell.CellType.PerimeterCell;
+                    }
+                }
+            }
+            else
+            {
+                // no skin cell found...
+            }
+            
+
+        }
+        private bool hasDiagonalNeighbour(StructuralCell cell)
+        {
+            //does the cell have a neighbour on diagonal that is marked as structural?
+            List<string> n4 = fourDiagNeighbours(cell);
+            var cells = voxels.SelectMany(x => x).ToList();
+            bool structuralNeighbour = false;
+            foreach (string code in n4)
+            {
+                var n = cells.Find(x => x.id == code);
+                if (n != null)
+                {
+                    if (n.cellType == StructuralCell.CellType.VerticalFillCell || n.cellType == StructuralCell.CellType.PerimeterCell) structuralNeighbour = true;
+                }
+            }
+            return structuralNeighbour;
+        }
+        private bool check4Neighbours(StructuralCell cell)
+        {
+            bool structuralNeighbour = false;
+            List<string> n4 = fourDiagNeighbours(cell);
+            var cells = voxels.SelectMany(x => x).ToList();
+            //if one of the 4 neighbours is structural cell all is good
+            foreach(string code in n4)
+            {
+                var n = cells.Find(x => x.id == code);
+                if (n != null)
+                {
+                    if (n.cellType == StructuralCell.CellType.VerticalFillCell || n.cellType == StructuralCell.CellType.PerimeterCell) structuralNeighbour = true;
+                }
+            }
+            return structuralNeighbour;
+        }
+        private List<string> fourNeighbours(StructuralCell cell)
+        {
+            List<string> n4 = new List<string>();
+            n4.Add(genMCode(cell.side, cell.colNum - 1, cell.rowNum));
+            n4.Add(genMCode(cell.side, cell.colNum + 1, cell.rowNum));
+            n4.Add(genMCode(cell.side, cell.colNum, cell.rowNum - 1));
+            n4.Add(genMCode(cell.side, cell.colNum, cell.rowNum + 1));
+            return n4;
+        }
+        private bool tryFillCell(string code, List<StructuralCell> cells)
+        {
+            bool filled = false;
+            var c = cells.Find(x => x.id == code);
+            if (c.cellType == StructuralCell.CellType.PerimeterCell) return true;
+            if (c.cellType == StructuralCell.CellType.Undefined)
+            {
+                c.cellType = StructuralCell.CellType.PerimeterCell;
+                return true;
+            }
+            return filled;
+        }
+        private void fillFromDiags(StructuralCell cell)
+        {
+            List<string> n4 = fourDiagNeighbours(cell);
+            var cells = voxels.SelectMany(x => x).ToList();
+            
+            foreach (string code in n4)
+            {
+                var n = cells.Find(x => x.id == code);
+                if (n != null)
+                {
+                    if (n.cellType == StructuralCell.CellType.VerticalFillCell || n.cellType == StructuralCell.CellType.PerimeterCell)
+                    {
+                        //try and fill at lower level first
+                        //break after fill as we only need a single filler
+                        if (n.rowNum < cell.rowNum)
+                        {
+                            //row below current cell
+                            var id = genMCode(cell.side, cell.colNum, cell.rowNum - 1);
+                            if (tryFillCell(id, cells)) break;
+                            
+                            else
+                            {
+                                //same row as current cell
+                                id = genMCode(cell.side, n.colNum, cell.rowNum);
+                                if (tryFillCell(id, cells)) break;
+                            }
+                        }
+                        else
+                        {
+                            //same row as current cell
+                            var id = genMCode(cell.side, n.colNum, cell.rowNum);
+                            if (tryFillCell(id, cells)) break;
+                            else
+                            {
+                                //row above current cell
+                                id = genMCode(cell.side, cell.colNum, cell.rowNum + 1);
+                                if (tryFillCell(id, cells)) break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private List<string> fourDiagNeighbours(StructuralCell cell)
+        {
+            List<string> n4 = new List<string>();
+            n4.Add(genMCode(cell.side, cell.colNum - 1, cell.rowNum - 1 ));
+            n4.Add(genMCode(cell.side, cell.colNum + 1, cell.rowNum - 1));
+            n4.Add(genMCode(cell.side, cell.colNum - 1, cell.rowNum + 1));
+            n4.Add(genMCode(cell.side, cell.colNum + 1, cell.rowNum + 1));
+            return n4;
         }
         private void tagInternalCells()
         {
@@ -230,6 +407,10 @@ namespace CavernVoxel
             Mesh caveface = MeshTools.splitMeshWithMesh(slice, trimCell);
             if (caveface != null) intersect = true;
             string mCode = genMCode(ab,x,z);
+            if(mCode=="03_00_1_7_2")
+            {
+                var p =0;
+            }
             if (intersect)
             {
                 MeshTools.matchOrientation(slice, ref caveface);
@@ -251,6 +432,19 @@ namespace CavernVoxel
             
             string side = "0";
             if (ab == "b") side = "1";
+            
+            string bay = baynum.ToString();
+            if (baynum < 10) bay = "0" + bay;
+
+            string mCode = section + "_" + bay + "_" + side + "_" + x + "_" + z;
+            return mCode;
+        }
+        private string genMCode(int s, int x, int z)
+        {
+            string section = parameters.sectionNum.ToString();
+            if (parameters.sectionNum < 10) section = "0" + section;
+
+            string side = s.ToString();
             
             string bay = baynum.ToString();
             if (baynum < 10) bay = "0" + bay;

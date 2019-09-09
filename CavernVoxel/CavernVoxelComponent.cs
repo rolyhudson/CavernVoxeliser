@@ -96,7 +96,7 @@ namespace CavernVoxel
             MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay,numBays,exploreMode, refPlane);
             VoxelDocumenter vDoc = new VoxelDocumenter();
             vDoc.writeSection3d(mvox,bldGrid);
-            //vDoc.writeSection2d(mvox);
+            vDoc.moduleSchedule(mvox);
             vDoc.map3dToWorldXY(mvox);
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> skinCells = new DataTree<StructuralCell>();

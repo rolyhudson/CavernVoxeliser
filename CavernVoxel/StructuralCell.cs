@@ -25,10 +25,15 @@ namespace CavernVoxel
         public List<Point3d> nodes = new List<Point3d>();
         public Point3d centroid;
         public bool fillerCell;
-        
+        public double caveFaceArea;
         //plane normals point to out side mesh
         public Plane midPlane;
         public Color displayColor;
+        public int rowNum;
+        public int colNum;
+        public int side;
+        public int bay;
+        public int part;
         Plane frontPlane;
         Plane backPlane;
         Vector3d toOutside;
@@ -40,12 +45,23 @@ namespace CavernVoxel
             memberSize = memberDim;
             cellType = CellType.Undefined;
             id = ID;
+            getRowColFromID();
             fillerCell = filler;
             setColor();
             setInnerBound();
             centreLines = untrimmedCentreLines;
             
         }
+        private void getRowColFromID()
+        {
+            string[] parts = id.Split('_');
+            rowNum = Convert.ToInt32(parts[4]);
+            colNum = Convert.ToInt32(parts[3]);
+            side = Convert.ToInt32(parts[2]);
+            bay = Convert.ToInt32(parts[1]);
+            part = Convert.ToInt32(parts[0]);
+        }
+
         private void setColor()
         {
             Random r = new Random();
@@ -76,7 +92,11 @@ namespace CavernVoxel
             }
             
         }
-        
+        private void setFaceArea()
+        {
+            AreaMassProperties mp = AreaMassProperties.Compute(caveFace);
+            if (mp != null) caveFaceArea = mp.Area;
+        }
         private void trimCell()
         {
             //no planes required right now
