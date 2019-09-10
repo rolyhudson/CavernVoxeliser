@@ -95,7 +95,7 @@ namespace CavernVoxel
             if (!DA.GetDataList(9, bldGrid)) return;
             MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay,numBays,exploreMode, refPlane);
             VoxelDocumenter vDoc = new VoxelDocumenter();
-            vDoc.writeSection3d(mvox,bldGrid);
+            vDoc.writeSection3d(mvox, bldGrid);
             vDoc.moduleSchedule(mvox);
             vDoc.map3dToWorldXY(mvox);
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();

@@ -136,13 +136,13 @@ namespace CavernVoxel
             //get the column
             var col = cells.FindAll(c => c.colNum == closest.colNum).ToList();
             //get the skin cell if any
-            var skin = col.Find(x => x.cellType == StructuralCell.CellType.SkinCell);
-            var t = cells.Find(x => x.id == genMCode(0, 7, 2));
-            if(skin!=null)
+            var skin = col.FindAll(x => x.cellType == StructuralCell.CellType.SkinCell).OrderByDescending(x => x.rowNum).ToList();
+
+            if (skin.Count>0)
             {
                 int z = cell.rowNum;
-                string id = "";
-                if (skin.rowNum >= cell.rowNum)
+                var topSkin = skin[0];
+                if (topSkin.rowNum >= cell.rowNum)
                 {
                     //add continuity on filler side upwards
                     var cellsFill = voxels.SelectMany(x => x).ToList().FindAll(c => c.side == cell.side && c.colNum == cell.colNum);
@@ -150,7 +150,7 @@ namespace CavernVoxel
                     {
                         z++;
                         var next = cellsFill.Find(x=>x.id == genMCode(cell.side, cell.colNum, z));
-                        var pair = cells.Find(x => x.rowNum == z);
+                        var pair = col.Find(x => x.rowNum == z);
                         next.cellType = StructuralCell.CellType.PerimeterCell;
                         if (pair.cellType == StructuralCell.CellType.PerimeterCell || pair.cellType == StructuralCell.CellType.VerticalFillCell) break;
                     }
@@ -161,9 +161,12 @@ namespace CavernVoxel
                     //add continuity on non filler side downwards
                     while (true)
                     {
-                        var pair = cells.Find(x => x.rowNum == z);
+                        
+                        var pair = col.Find(x => x.rowNum == z);
+                        if (pair == null) break;
                         if (pair.cellType == StructuralCell.CellType.PerimeterCell || pair.cellType == StructuralCell.CellType.VerticalFillCell) break;
                         else pair.cellType = StructuralCell.CellType.PerimeterCell;
+                        z--;
                     }
                 }
             }
@@ -407,10 +410,7 @@ namespace CavernVoxel
             Mesh caveface = MeshTools.splitMeshWithMesh(slice, trimCell);
             if (caveface != null) intersect = true;
             string mCode = genMCode(ab,x,z);
-            if(mCode=="03_00_1_7_2")
-            {
-                var p =0;
-            }
+            
             if (intersect)
             {
                 MeshTools.matchOrientation(slice, ref caveface);

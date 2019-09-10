@@ -222,7 +222,7 @@ namespace CavernVoxel
             }
             return true;
         }
-        private static bool pointInsidePlane(Point3d p, Plane pln)
+        public static bool pointInsidePlane(Point3d p, Plane pln)
         {
             Vector3d v = p - pln.Origin;
             if (Vector3d.VectorAngle(v, pln.Normal) < Math.PI / 2) return true;

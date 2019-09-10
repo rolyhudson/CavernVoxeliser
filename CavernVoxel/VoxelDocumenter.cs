@@ -44,15 +44,19 @@ namespace CavernVoxel
                     {
                         foreach (StructuralCell c in sc)
                         {
-                            if (c.cellType == StructuralCell.CellType.SkinCell) skinModuleCount++;
+                            string area = "";
+                            string flag = "";
+                            if (c.cellType == StructuralCell.CellType.SkinCell)
+                            {
+                                skinModuleCount++;
+                                area = Math.Round(c.caveFaceArea, 3).ToString();
+                                flag = (c.caveFace.DisjointMeshCount - 1).ToString();
+                            }
                             if (c.cellType == StructuralCell.CellType.VerticalFillCell) verticalModuleCount++;
                             if (c.cellType == StructuralCell.CellType.PerimeterCell) perimeterModuleCount++;
                             if (c.cellType != StructuralCell.CellType.InsideCell && c.cellType != StructuralCell.CellType.Undefined)
                             {
-
-                                int flag = 0;
-                                if (c.cellType == StructuralCell.CellType.SkinCell) flag = c.caveFace.DisjointMeshCount - 1;
-                                sw.WriteLine(c.id + "," + c.cellType.ToString() + "," + flag+","+c.caveFaceArea);
+                                sw.WriteLine(c.id + "," + c.cellType.ToString() + "," + flag+","+area);
                                 modulesCount++;
                             }
                         }
@@ -63,7 +67,7 @@ namespace CavernVoxel
             sw.Close();
 
             StreamWriter sw2 = new StreamWriter(@"C:\Users\r.hudson\Documents\WORK\projects\passageProjects\caveparts\allModulesSummary.csv", true);
-            sw2.WriteLine("section" + cavepart + ",total bays:," + bayNum + ",total modules all types:," + modulesCount +
+            sw2.WriteLine("part" + cavepart + ",total bays:," + bayNum + ",total modules all types:," + modulesCount +
                 ",cavern intersection modules:," + skinModuleCount + ",perimeter modules:," + perimeterModuleCount +
                 ",vertical support modules:," + verticalModuleCount);
             sw2.Close();
@@ -347,7 +351,7 @@ namespace CavernVoxel
                 {
                     double maxX = 0.0;
                     Point3d origin = new Point3d(sb.minPlane.Origin);
-                    Plane plnA = new Plane(origin + sb.minPlane.YAxis * sb.parameters.yCell / 2, sb.minPlane.XAxis, Vector3d.ZAxis);
+                    Plane plnA = new Plane(origin + sb.minPlane.YAxis * mvox.parameters.memberSize, sb.minPlane.XAxis, Vector3d.ZAxis);
                     //shift to end of module
                     Plane plnB = new Plane(origin + sb.minPlane.YAxis * sb.parameters.yCell, sb.minPlane.XAxis, Vector3d.ZAxis);
                     plnA.Flip();

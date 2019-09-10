@@ -18,6 +18,7 @@ namespace CavernVoxel
         public List<Curve> untrimmedCentreLines = new List<Curve>();
         public List<Curve> centreLines = new List<Curve>();
         public List<Curve> diagonals = new List<Curve>();
+
         public Mesh caveFace = new Mesh();
         public Brep millingVolume = new Brep();
         public CellType cellType;
@@ -38,21 +39,49 @@ namespace CavernVoxel
         Plane backPlane;
         Vector3d toOutside;
         double memberSize;
+        List<DiagonalMember> diagonalMembers = new List<DiagonalMember>();
+        public StructuralCell(Mesh bound, double memberDim, Mesh mesh, string ID, bool filler)
+        {
+            //this called for the skin cells
+            cellType = CellType.SkinCell;
+            boundary = bound;
+            boundary.FaceNormals.ComputeFaceNormals();
+            memberSize = memberDim;
+            caveFace = mesh;
+
+            id = ID;
+            setPositionFromID();
+            fillerCell = filler;
+            if (caveFace.Faces.Count == 0)
+            {
+                cellType = CellType.Undefined;
+            }
+            else
+            {
+                setColor();
+                setInnerBound();
+                trimCell();
+                storeDiagonals();
+                setFaceArea();
+            }
+
+        }
         public StructuralCell(Mesh bound, double memberDim,string ID,bool filler)
         {
+            //this called for other cells
             boundary = bound;
             
             memberSize = memberDim;
             cellType = CellType.Undefined;
             id = ID;
-            getRowColFromID();
+            setPositionFromID();
             fillerCell = filler;
             setColor();
             setInnerBound();
             centreLines = untrimmedCentreLines;
-            
+            storeDiagonals();
         }
-        private void getRowColFromID()
+        private void setPositionFromID()
         {
             string[] parts = id.Split('_');
             rowNum = Convert.ToInt32(parts[4]);
@@ -70,28 +99,7 @@ namespace CavernVoxel
             int blue = r.Next(255);
             displayColor = Color.FromArgb(red, green, blue);
         }
-        public StructuralCell (Mesh bound,double memberDim,Mesh mesh, string ID,bool filler)
-        {
-            cellType = CellType.SkinCell;
-            boundary = bound;
-            boundary.FaceNormals.ComputeFaceNormals();
-            memberSize = memberDim;
-            caveFace = mesh;
-            
-            id = ID;
-            fillerCell = filler;
-            if (caveFace.Faces.Count == 0)
-            {
-                cellType = CellType.Undefined;
-            }
-            else
-            {
-                setColor();
-                setInnerBound();
-                trimCell();
-            }
-            
-        }
+        
         private void setFaceArea()
         {
             AreaMassProperties mp = AreaMassProperties.Compute(caveFace);
@@ -99,14 +107,12 @@ namespace CavernVoxel
         }
         private void trimCell()
         {
-            //no planes required right now
+
             setMidPlane();
             //getBackFrontPlanes();
-            trimStructure();
+            //trimStructure();
             findNodesTrimCentreLines();
             intersectDiagonals();
-            
-            //millingVolume = trimOutMillingVolume();
         }
         private void setInnerBound()
         {
@@ -119,13 +125,9 @@ namespace CavernVoxel
             {
                 untrimmedCentreLines.Add(be.DuplicateCurve());
             }
-            //add al diagonals
-            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[2].Location).ToNurbsCurve());
-            diagonals.Add(new Line(innerBoundary.Vertices[2].Location, innerBoundary.Vertices[5].Location).ToNurbsCurve());
-            diagonals.Add(new Line(innerBoundary.Vertices[2].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
-            diagonals.Add(new Line(innerBoundary.Vertices[5].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
-            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[5].Location).ToNurbsCurve());
-            diagonals.Add(new Line(innerBoundary.Vertices[1].Location, innerBoundary.Vertices[6].Location).ToNurbsCurve());
+            //add diagonals
+            
+            for (int d = 0; d < 6; d++) diagonalMembers.Add(new DiagonalMember(d, innerBoundary));
         }
         private Brep trimOutMillingVolume()
         {
@@ -148,28 +150,20 @@ namespace CavernVoxel
         }
         private void intersectDiagonals()
         {
-            
-            for(int c=0;c<diagonals.Count;c++)
+            for(int c=0;c<diagonalMembers.Count;c++)
             {
-                if (curveIsInsideMesh(diagonals[c], caveFace))
-                {
-                    diagonals.Remove(diagonals[c]);
-                    c--;
-                }
-                else
-                {
-                    Line edge = new Line(diagonals[c].PointAtStart, diagonals[c].PointAtEnd);
-                    int[] faceIds;
-                    Point3d[] points = Rhino.Geometry.Intersect.Intersection.MeshLine(caveFace, edge, out faceIds);
-                    if (points.Length > 0)
-                    {
-                        diagonals.Remove(diagonals[c]);
-                        c--;
-                    }
-                }
-               
+                diagonalMembers[c].trim(caveFace);
             }
-           
+        }
+        private void storeDiagonals()
+        {
+            for (int c = 0; c < diagonalMembers.Count; c++)
+            {
+                if (diagonalMembers[c].needed)
+                {
+                    diagonals.Add(diagonalMembers[c].diagonal.ToNurbsCurve());
+                }
+            }
         }
         private void findNodesTrimCentreLines()
         {

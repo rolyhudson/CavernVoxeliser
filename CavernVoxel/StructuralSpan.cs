@@ -262,7 +262,7 @@ namespace CavernVoxel
             Vector3d shift = referencePlane.ZAxis;
 
             referencePlane.Origin = referencePlane.Origin + shift * min;
-            parameters.unitsZ = Convert.ToInt32(Math.Ceiling((max - min) / parameters.zCell));
+            parameters.unitsZ = Convert.ToInt32(Math.Ceiling((max - min) / parameters.zCell))+1;
         }
         private void minMaxFromPlane(Mesh mesh, Plane refPln, ref double min, ref double max)
         {
