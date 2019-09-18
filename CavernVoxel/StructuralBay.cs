@@ -99,6 +99,74 @@ namespace CavernVoxel
             tagInternalCells();
             setVerticalSupports();
             structuralContinuity();
+            fillToSlab();
+        }
+        private void fillToSlab()
+        {
+            foreach (List<StructuralCell> sc in voxels)
+            {
+                foreach (StructuralCell c in sc)
+                {
+                    if (c.rowNum == 0)
+                    {
+                        Line down = new Line(c.centroid, Vector3d.ZAxis, -100000);
+                        foreach(Surface s in parameters.slabs)
+                        {
+                            var inter = Rhino.Geometry.Intersect.Intersection.CurveSurface(down.ToNurbsCurve(), s, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+                            if (inter.Count > 0)
+                            {
+                                double dist = c.centroid.Z - inter[0].PointA.Z - parameters.zCell/2;
+                                double nfills = dist / parameters.zCell / 2;
+                                double fillCell = nfills % 1 * parameters.zCell;
+                                double lastCell = 0;
+                                int nCells = Convert.ToInt32(Math.Floor(nfills));
+                                //check last cell size
+                                if (fillCell< parameters.fillerMinimum)
+                                {
+                                    //oversized last cell
+                                    lastCell = parameters.zCell+fillCell;
+                                }
+                                else
+                                {
+                                    //undersized extra last cell
+                                    lastCell = fillCell;
+                                    nCells++;
+                                }
+
+                                //makecuboids
+                                Interval xint = new Interval(-parameters.xCell / 2, parameters.xCell / 2);
+                                Interval yint = new Interval(-parameters.yCell / 2, parameters.yCell / 2);
+                                double height = parameters.zCell;
+                                Vector3d shft = new Vector3d();
+                                for (int i = 0; i < nCells ; i++)
+                                {
+                                    if (i == nCells-1)
+                                    {
+                                        //spacing on lastcell
+                                        shft = Vector3d.ZAxis * ((i + 1) * parameters.zCell) + Vector3d.ZAxis * lastCell;
+                                        height = lastCell;
+                                    }
+                                    else
+                                    {
+                                        shft = Vector3d.ZAxis * ((i + 1) * parameters.zCell);
+                                        
+                                    }
+                                    Plane cellPlane = new Plane(c.centroid + shft, minPlane.XAxis, minPlane.YAxis);
+                                    Mesh cell = makeCuboid(cellPlane, parameters.xCell, yint, height);
+                                    string mcode = genMCode(c.side, c.colNum, c.rowNum - 1);
+                                    StructuralCell structCell = new StructuralCell(cell, parameters.memberSize, mcode, false);
+                                    
+                                    //can't mod the list of voxels here in this foreach
+                                    //store and add after/
+                                    //if (c.side == 0) voxels[0].Add(structCell);
+                                    //else voxels[1].Add(structCell);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
         private void structuralContinuity()
         {

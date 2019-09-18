@@ -16,7 +16,8 @@ namespace CavernVoxel
         List<Mesh> meshesToVoxelise;
         
         public List<StructuralSpan> structuralSpans = new List<StructuralSpan>();
-        public List<Mesh> spanBoxes = new List<Mesh>(); 
+        public List<Mesh> spanBoxes = new List<Mesh>();
+        
         public VoxelParameters parameters;
         public Text3d sectionNum;
         Plane gridPlane;
@@ -24,10 +25,11 @@ namespace CavernVoxel
         
         
         Mesh baseCell = new Mesh();
-        public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane)
+        public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane, List<Surface> slbs)
         {
-            parameters = new VoxelParameters(x, y, z, memberDim, explore,startBay);
+            parameters = new VoxelParameters(x, y, z, memberDim, explore,startBay,slbs);
             meshesToVoxelise = meshes;
+            
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
             meshesToVoxelise.ForEach(m => m.FaceNormals.ComputeFaceNormals());
             gridPlane = refPlane;

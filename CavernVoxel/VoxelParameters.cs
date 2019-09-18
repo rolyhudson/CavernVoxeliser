@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rhino.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,7 +22,9 @@ namespace CavernVoxel
         public int sectionNum;
         public double width;
         public double height;
-        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum)
+        public double fillerMinimum;
+        public List<Surface> slabs = new List<Surface>();
+        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum,List<Surface> slbs)
         {
             xCell = x;
             yCell = y;
@@ -29,6 +32,8 @@ namespace CavernVoxel
             explore = exploreMode;
             memberSize = memberDim;
             sectionNum = sectNum;
+            slabs = slbs;
+            fillerMinimum = 400;
             width = 60000;
             height = 40000;
         }

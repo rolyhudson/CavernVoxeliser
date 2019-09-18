@@ -45,6 +45,7 @@ namespace CavernVoxel
             pManager.AddBooleanParameter("explore mode", "em", "", GH_ParamAccess.item, true);
             pManager.AddPlaneParameter("reference plane", "rp", "", GH_ParamAccess.item);
             pManager.AddCurveParameter("building grid", "bg", "", GH_ParamAccess.list);
+            pManager.AddSurfaceParameter("slabs", "", "", GH_ParamAccess.list);
             pManager[8].Optional = true;
         }
 
@@ -74,6 +75,7 @@ namespace CavernVoxel
         {
             List<Mesh> meshes = new List<Mesh>();
             List<Curve> bldGrid = new List<Curve>();
+            List<Surface> slabs = new List<Surface>();
             double xcell = 0;
             double ycell = 0;
             double zcell = 0;
@@ -93,7 +95,8 @@ namespace CavernVoxel
             if (!DA.GetData(7, ref exploreMode)) return;
             DA.GetData(8, ref refPlane);
             if (!DA.GetDataList(9, bldGrid)) return;
-            MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay,numBays,exploreMode, refPlane);
+            if(!DA.GetDataList(10,slabs)) return;
+            MeshVoxeliser mvox = new MeshVoxeliser(meshes, xcell, ycell, zcell, memberT, startBay,numBays,exploreMode, refPlane,slabs);
             VoxelDocumenter vDoc = new VoxelDocumenter();
             vDoc.writeSection3d(mvox, bldGrid);
             vDoc.moduleSchedule(mvox);

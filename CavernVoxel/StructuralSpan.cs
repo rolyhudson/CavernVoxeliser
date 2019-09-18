@@ -21,7 +21,7 @@ namespace CavernVoxel
         public Plane minPlane;
         public Plane maxPlane;
         Plane referencePlane;
-        double fillerMinimum = 400;
+        
         int bayNum;
         public StructuralSpan(VoxelParameters vParams,Mesh m,Plane plane,int firstBay)
         {
@@ -299,7 +299,7 @@ namespace CavernVoxel
 
             parameters.unitsX = Convert.ToInt32(Math.Floor((max - min) / parameters.xCell));
             parameters.fillerCellX = (max - min) - (parameters.unitsX * parameters.xCell);
-            if (parameters.fillerCellX < fillerMinimum)
+            if (parameters.fillerCellX < parameters.fillerMinimum)
             {
                 //make a larger than xCell filler
                 parameters.unitsX = parameters.unitsX - 1;
