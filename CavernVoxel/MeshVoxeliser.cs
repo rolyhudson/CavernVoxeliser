@@ -25,9 +25,9 @@ namespace CavernVoxel
         
         
         Mesh baseCell = new Mesh();
-        public MeshVoxeliser(List<Mesh> meshes,double x, double y,double z,double memberDim, int startBay, int endBay,bool explore, Plane refPlane, List<Surface> slbs)
+        public MeshVoxeliser(List<Mesh> meshes, int startBay, int endBay, Plane refPlane, VoxelParameters prms)
         {
-            parameters = new VoxelParameters(x, y, z, memberDim, explore,startBay,slbs);
+            parameters = prms;
             meshesToVoxelise = meshes;
             
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());

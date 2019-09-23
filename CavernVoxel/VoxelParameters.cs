@@ -24,7 +24,8 @@ namespace CavernVoxel
         public double height;
         public double fillerMinimum;
         public List<Surface> slabs = new List<Surface>();
-        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum,List<Surface> slbs)
+        public Brep wall;
+        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum,List<Surface> slbs, Brep wll)
         {
             xCell = x;
             yCell = y;
@@ -33,6 +34,7 @@ namespace CavernVoxel
             memberSize = memberDim;
             sectionNum = sectNum;
             slabs = slbs;
+            wall = wll;
             fillerMinimum = 400;
             width = 60000;
             height = 40000;

@@ -99,15 +99,110 @@ namespace CavernVoxel
             tagInternalCells();
             setVerticalSupports();
             structuralContinuity();
-            fillToSlab();
+            checkBaseModules();
+            boundaryChecks();
         }
-        private void fillToSlab()
+        private void boundaryChecks()
         {
+            Curve[] cInter;
+            Point3d[] pInter;
             foreach (List<StructuralCell> sc in voxels)
             {
                 foreach (StructuralCell c in sc)
                 {
-                    if (c.rowNum == 0)
+                    bool inter = Rhino.Geometry.Intersect.Intersection.BrepBrep(c.innerBoundary, parameters.wall, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, out cInter, out pInter);
+                    bool inside = parameters.wall.IsPointInside(c.centroid, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, false);
+                    if (cInter.Length>0)
+                    {
+                        c.cellType = StructuralCell.CellType.Undefined;
+                        
+                    }
+                    if (!inside)
+                    {
+                        c.cellType = StructuralCell.CellType.Undefined;
+                    }
+                }
+            }
+        }
+        private void fillToSlab(StructuralCell c, double dist, ref List<StructuralCell> cellszero,ref List<StructuralCell> cellsone)
+        {
+            double nfills = dist / parameters.zCell;
+            double fillCell = nfills % 1 * parameters.zCell;
+            double lastCell = 0;
+            int nCells = Convert.ToInt32(Math.Floor(nfills));
+            //check last cell size
+            if (fillCell < parameters.fillerMinimum)
+            {
+                //oversized last cell
+                lastCell = parameters.zCell + fillCell;
+            }
+            else
+            {
+                //undersized extra last cell
+                lastCell = fillCell;
+                nCells++;
+            }
+
+            //makecuboids
+            Interval xint = new Interval(-parameters.xCell / 2, parameters.xCell / 2);
+            Interval yint = new Interval(-parameters.yCell / 2, parameters.yCell / 2);
+            double height = parameters.zCell;
+            Vector3d shft = new Vector3d();
+            for (int i = 0; i < nCells; i++)
+            {
+                if (i == nCells - 1)
+                {
+                    //spacing on lastcell
+                    shft = shft + Vector3d.ZAxis * lastCell / 2 + Vector3d.ZAxis * parameters.zCell / 2;
+                    height = lastCell;
+                }
+                else
+                {
+                    shft = Vector3d.ZAxis * ((i + 1) * parameters.zCell);
+
+                }
+                Plane cellPlane = new Plane(c.centroid - shft, minPlane.XAxis, minPlane.YAxis);
+                Mesh cell = makeCuboid(cellPlane, parameters.xCell, yint, height);
+                string mcode = genMCode(c.side, c.colNum, c.rowNum - 1);
+                StructuralCell structCell = new StructuralCell(cell, parameters.memberSize, mcode, false);
+                structCell.cellType = StructuralCell.CellType.VerticalFillCell;
+                
+                //store and add after/
+                if (c.side == 0) cellszero.Add(structCell);
+                else cellsone.Add(structCell);
+            }
+        }
+        private void reduceModule(StructuralCell c,Point3d slabPt, ref List<StructuralCell> cellszero, ref List<StructuralCell> cellsone)
+        {
+            double newH = 0;
+            c.cellType = StructuralCell.CellType.Undefined;
+            
+            if (slabPt.Z > c.centroid.Z)
+            {
+                newH = parameters.zCell/2 - (slabPt.Z - c.centroid.Z);
+            }
+            else
+            {
+                double d = (c.centroid.Z - slabPt.Z);
+                newH = parameters.zCell/2 + d;
+            }
+            if (newH < parameters.fillerMinimum) return;
+            Plane cellPlane = new Plane(slabPt + Vector3d.ZAxis*newH/2, minPlane.XAxis, minPlane.YAxis);
+            Mesh cell = makeCuboid(cellPlane, parameters.xCell, new Interval(-parameters.yCell/2, parameters.yCell / 2), newH);
+            StructuralCell structCell = new StructuralCell(cell, parameters.memberSize, c.id, false);
+            structCell.cellType = StructuralCell.CellType.VerticalFillCell;
+            if (c.side == 0) cellszero.Add(structCell);
+            else cellsone.Add(structCell);
+        }
+        private void checkBaseModules()
+        {
+            List<StructuralCell> cellsZero = new List<StructuralCell>();
+            List<StructuralCell> cellsOne = new List<StructuralCell>();
+            foreach (List<StructuralCell> sc in voxels)
+            {
+                foreach (StructuralCell c in sc)
+                {
+                    if (c.rowNum == 0&&c.cellType!= StructuralCell.CellType.Undefined)
                     {
                         Line down = new Line(c.centroid, Vector3d.ZAxis, -100000);
                         foreach(Surface s in parameters.slabs)
@@ -115,58 +210,31 @@ namespace CavernVoxel
                             var inter = Rhino.Geometry.Intersect.Intersection.CurveSurface(down.ToNurbsCurve(), s, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
                             if (inter.Count > 0)
                             {
-                                double dist = c.centroid.Z - inter[0].PointA.Z - parameters.zCell/2;
-                                double nfills = dist / parameters.zCell / 2;
-                                double fillCell = nfills % 1 * parameters.zCell;
-                                double lastCell = 0;
-                                int nCells = Convert.ToInt32(Math.Floor(nfills));
-                                //check last cell size
-                                if (fillCell< parameters.fillerMinimum)
+                                //centroid to slab distance
+                                double dist = c.centroid.DistanceTo(inter[0].PointA);
+                                if (dist < parameters.zCell/2+parameters.fillerMinimum)
                                 {
-                                    //oversized last cell
-                                    lastCell = parameters.zCell+fillCell;
+                                    //smaller than half module
+                                    //replace with smaller module
+                                    reduceModule(c,inter[0].PointA, ref cellsZero, ref cellsOne);
+                                    break;
                                 }
                                 else
                                 {
-                                    //undersized extra last cell
-                                    lastCell = fillCell;
-                                    nCells++;
+                                    //fill missing modules
+                                    //or extend last
+                                    //adjust dist to be underside last module to slab
+                                    fillToSlab(c, dist-parameters.zCell/2, ref cellsZero, ref cellsOne);
+                                    break;
                                 }
-
-                                //makecuboids
-                                Interval xint = new Interval(-parameters.xCell / 2, parameters.xCell / 2);
-                                Interval yint = new Interval(-parameters.yCell / 2, parameters.yCell / 2);
-                                double height = parameters.zCell;
-                                Vector3d shft = new Vector3d();
-                                for (int i = 0; i < nCells ; i++)
-                                {
-                                    if (i == nCells-1)
-                                    {
-                                        //spacing on lastcell
-                                        shft = Vector3d.ZAxis * ((i + 1) * parameters.zCell) + Vector3d.ZAxis * lastCell;
-                                        height = lastCell;
-                                    }
-                                    else
-                                    {
-                                        shft = Vector3d.ZAxis * ((i + 1) * parameters.zCell);
-                                        
-                                    }
-                                    Plane cellPlane = new Plane(c.centroid + shft, minPlane.XAxis, minPlane.YAxis);
-                                    Mesh cell = makeCuboid(cellPlane, parameters.xCell, yint, height);
-                                    string mcode = genMCode(c.side, c.colNum, c.rowNum - 1);
-                                    StructuralCell structCell = new StructuralCell(cell, parameters.memberSize, mcode, false);
-                                    
-                                    //can't mod the list of voxels here in this foreach
-                                    //store and add after/
-                                    //if (c.side == 0) voxels[0].Add(structCell);
-                                    //else voxels[1].Add(structCell);
-                                }
-                                break;
+                                
                             }
                         }
                     }
                 }
             }
+            voxels[0].AddRange(cellsZero);
+            voxels[1].AddRange(cellsOne);
         }
         private void structuralContinuity()
         {
@@ -219,6 +287,10 @@ namespace CavernVoxel
                         z++;
                         var next = cellsFill.Find(x=>x.id == genMCode(cell.side, cell.colNum, z));
                         var pair = col.Find(x => x.rowNum == z);
+                        if (pair == null || next == null)
+                        {
+                            break;
+                        }
                         next.cellType = StructuralCell.CellType.PerimeterCell;
                         if (pair.cellType == StructuralCell.CellType.PerimeterCell || pair.cellType == StructuralCell.CellType.VerticalFillCell) break;
                     }
