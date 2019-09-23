@@ -1,5 +1,5 @@
 # CavernVoxeliser
-Defining structural geometry around scanned mesh of Mulu Cave in Borneo. 
+Defining structural geometry around scanned mesh of a cave 
 
 Structural units are 'voxels' that are located based on intersections with the scanned mesh, plus additional units to complete trussess and provide vertical support.
 
