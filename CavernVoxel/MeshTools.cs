@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino.Geometry;
+using Rhino;
 
 namespace CavernVoxel
 {
@@ -31,6 +32,32 @@ namespace CavernVoxel
 
             }
             return null;
+        }
+        public static bool curveInBrep(Curve c, Brep b)
+        {
+            NurbsCurve nc = c.ToNurbsCurve();
+            
+            foreach(ControlPoint cp in nc.Points)
+            {
+                if (!b.IsPointInside(cp.Location, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, true)) return false;
+            }
+            //all points were inside
+            return true;
+        }
+        public static Mesh makeCuboid(Plane pln, double width, double depth, double height)
+        {
+            Mesh cell = new Mesh();
+            Box box = new Box(pln, new Interval(-width / 2, width / 2),new Interval (-depth/2,depth/2), new Interval(-height / 2, height / 2));
+            cell = Mesh.CreateFromBox(box, 1, 1, 1);
+            return cell;
+        }
+        public static Mesh makeCuboid(Plane pln, double width, Interval depth, double height)
+        {
+            //non equal y interval
+            Mesh cell = new Mesh();
+            Box box = new Box(pln, new Interval(-width / 2, width / 2), depth, new Interval(-height / 2, height / 2));
+            cell = Mesh.CreateFromBox(box, 1, 1, 1);
+            return cell;
         }
         public static void matchOrientation(Mesh toMatch,ref Mesh toOrient)
         {

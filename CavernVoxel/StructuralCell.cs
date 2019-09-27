@@ -12,7 +12,7 @@ namespace CavernVoxel
     {
         public string id;
         public Mesh boundary;
-        
+        public Brep outerBoundary;
         public Brep innerBoundary;
         public Brep trimInnerBoundary;
         public List<Curve> untrimmedCentreLines = new List<Curve>();
@@ -35,42 +35,29 @@ namespace CavernVoxel
         public int side;
         public int bay;
         public int part;
+        public Curve boundCurve0;
+        public Curve boundCurve1;
+        public Plane boundPlane0;
+        public Plane boundPlane1;
+        public double zDim;
+        public double yDim;
+        public double xDim;
+        public Plane cellPlane;
         Plane frontPlane;
         Plane backPlane;
         Vector3d toOutside;
         double memberSize;
         List<DiagonalMember> diagonalMembers = new List<DiagonalMember>();
-        public StructuralCell(Mesh bound, double memberDim, Mesh mesh, string ID, bool filler)
+        
+        
+        public StructuralCell(Plane cellplane,double xdim,double ydim,double zdim, double memberDim,string ID,bool filler)
         {
-            //this called for the skin cells
-            cellType = CellType.SkinCell;
-            boundary = bound;
+            cellPlane = cellplane;
+            xDim = xdim;
+            yDim = ydim;
+            zDim = zdim;
+            boundary = MeshTools.makeCuboid(cellPlane,xDim,yDim,zDim);
             boundary.FaceNormals.ComputeFaceNormals();
-            memberSize = memberDim;
-            caveFace = mesh;
-
-            id = ID;
-            setPositionFromID();
-            fillerCell = filler;
-            if (caveFace.Faces.Count == 0)
-            {
-                cellType = CellType.Undefined;
-            }
-            else
-            {
-                setColor();
-                setInnerBound();
-                trimCell();
-                storeDiagonals();
-                setFaceArea();
-            }
-
-        }
-        public StructuralCell(Mesh bound, double memberDim,string ID,bool filler)
-        {
-            //this called for other cells
-            boundary = bound;
-            
             memberSize = memberDim;
             cellType = CellType.Undefined;
             id = ID;
@@ -80,6 +67,21 @@ namespace CavernVoxel
             setInnerBound();
             centreLines = untrimmedCentreLines;
             storeDiagonals();
+        }
+        public void setSkinCell(Mesh mesh)
+        {
+            caveFace = mesh;
+            if (caveFace.Faces.Count == 0)
+            {
+                cellType = CellType.Undefined;
+            }
+            else
+            {
+                cellType = CellType.SkinCell;
+                trimCell();
+                storeDiagonals();
+                setFaceArea();
+            }
         }
         private void setPositionFromID()
         {
@@ -128,6 +130,17 @@ namespace CavernVoxel
             //add diagonals
             
             for (int d = 0; d < 6; d++) diagonalMembers.Add(new DiagonalMember(d, innerBoundary));
+            //set the faceboundaries
+            setBoundaryPlaneCurves();
+        }
+        
+        private void setBoundaryPlaneCurves()
+        {
+            outerBoundary = Brep.CreateFromMesh(boundary, false);
+            boundCurve0 = outerBoundary.Faces[2].OuterLoop.To3dCurve();
+            boundCurve1 = outerBoundary.Faces[4].OuterLoop.To3dCurve();
+            boundPlane0 = new Plane(outerBoundary.Faces[2].PointAt(0.5, 0.5), outerBoundary.Faces[2].NormalAt(0.5, 0.5));
+            boundPlane1 = new Plane(outerBoundary.Faces[4].PointAt(0.5, 0.5), outerBoundary.Faces[4].NormalAt(0.5, 0.5));
         }
         private Brep trimOutMillingVolume()
         {
@@ -157,6 +170,8 @@ namespace CavernVoxel
         }
         private void storeDiagonals()
         {
+            //reset the diagonal collection
+            diagonals = new List<Curve>();
             for (int c = 0; c < diagonalMembers.Count; c++)
             {
                 if (diagonalMembers[c].needed)
@@ -167,6 +182,8 @@ namespace CavernVoxel
         }
         private void findNodesTrimCentreLines()
         {
+            //reset thecentreline collection
+            centreLines = new List<Curve>();
             foreach(Curve c in untrimmedCentreLines)
             {
                 

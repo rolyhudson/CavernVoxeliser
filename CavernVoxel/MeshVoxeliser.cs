@@ -61,10 +61,10 @@ namespace CavernVoxel
 
                 Plane p1 = new Plane(origin, gridPlane.YAxis);
                 Plane p2 = new Plane(origin + gridPlane.YAxis * parameters.yCell * 2, gridPlane.YAxis * -1);
-
+                
                 //Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
                 Mesh slice = MeshTools.splitTwoPlanes(p1, p2, meshesToVoxelise[0]);
-                if (slice != null)
+                if (slice != null&&slice.Faces.Count>0)
                 {
                     structuralSpans.Add(new StructuralSpan(parameters, slice, boxPln, y));
                 }
