@@ -14,62 +14,158 @@ namespace CavernVoxel
         public Line diagonal;
         public bool needed = true;
         double dnum;
-        public DiagonalMember(int dNum,Brep bound)
+        public DiagonalMember(int dNum,List<Point3d> nodegrid)
         {
             dnum = dNum;
-            switch (dNum)
+            switch(dnum)
             {
                 case 0:
-                    endpoints.Add(bound.Vertices[1].Location);
-                    endpoints.Add(bound.Vertices[6].Location);
-                    points.Add(bound.Vertices[1].Location);
-                    points.Add(bound.Vertices[0].Location);
-                    points.Add(bound.Vertices[6].Location);
-                    points.Add(bound.Vertices[7].Location);
+                    endpoints.Add(nodegrid[0]);
+                    endpoints.Add(nodegrid[7]);
+                    points.Add(nodegrid[1]);
+                    points.Add(nodegrid[0]);
+                    points.Add(nodegrid[6]);
+                    points.Add(nodegrid[7]);
                     break;
                 case 1:
-                    endpoints.Add(bound.Vertices[2].Location);
-                    endpoints.Add(bound.Vertices[6].Location);
-                    points.Add(bound.Vertices[0].Location);
-                    points.Add(bound.Vertices[2].Location);
-                    points.Add(bound.Vertices[4].Location);
-                    points.Add(bound.Vertices[6].Location);
+                    endpoints.Add(nodegrid[0]);
+                    endpoints.Add(nodegrid[10]);
+                    points.Add(nodegrid[0]);
+                    points.Add(nodegrid[8]);
+                    points.Add(nodegrid[10]);
+                    points.Add(nodegrid[6]);
                     break;
                 case 2:
-                    endpoints.Add(bound.Vertices[2].Location);
-                    endpoints.Add(bound.Vertices[5].Location);
-                    points.Add(bound.Vertices[3].Location);
-                    points.Add(bound.Vertices[2].Location);
-                    points.Add(bound.Vertices[4].Location);
-                    points.Add(bound.Vertices[5].Location);
+                    endpoints.Add(nodegrid[2]);
+                    endpoints.Add(nodegrid[10]);
+                    points.Add(nodegrid[8]);
+                    points.Add(nodegrid[2]);
+                    points.Add(nodegrid[4]);
+                    points.Add(nodegrid[10]);
                     break;
                 case 3:
-                    endpoints.Add(bound.Vertices[5].Location);
-                    endpoints.Add(bound.Vertices[1].Location);
-                    points.Add(bound.Vertices[1].Location);
-                    points.Add(bound.Vertices[3].Location);
-                    points.Add(bound.Vertices[5].Location);
-                    points.Add(bound.Vertices[7].Location);
+                    endpoints.Add(nodegrid[2]);
+                    endpoints.Add(nodegrid[5]);
+                    points.Add(nodegrid[2]);
+                    points.Add(nodegrid[3]);
+                    points.Add(nodegrid[5]);
+                    points.Add(nodegrid[4]);
                     break;
                 case 4:
-                    endpoints.Add(bound.Vertices[1].Location);
-                    endpoints.Add(bound.Vertices[2].Location);
-                    points.Add(bound.Vertices[1].Location);
-                    points.Add(bound.Vertices[0].Location);
-                    points.Add(bound.Vertices[2].Location);
-                    points.Add(bound.Vertices[3].Location);
+                    endpoints.Add(nodegrid[3]);
+                    endpoints.Add(nodegrid[11]);
+                    points.Add(nodegrid[3]);
+                    points.Add(nodegrid[9]);
+                    points.Add(nodegrid[11]);
+                    points.Add(nodegrid[5]);
                     break;
                 case 5:
-                    endpoints.Add(bound.Vertices[5].Location);
-                    endpoints.Add(bound.Vertices[6].Location);
-                    points.Add(bound.Vertices[4].Location);
-                    points.Add(bound.Vertices[5].Location);
-                    points.Add(bound.Vertices[7].Location);
-                    points.Add(bound.Vertices[6].Location);
+                    endpoints.Add(nodegrid[1]);
+                    endpoints.Add(nodegrid[11]);
+                    points.Add(nodegrid[1]);
+                    points.Add(nodegrid[9]);
+                    points.Add(nodegrid[11]);
+                    points.Add(nodegrid[7]);
+                    break;
+                case 6:
+                    endpoints.Add(nodegrid[8]);
+                    endpoints.Add(nodegrid[11]);
+                    points.Add(nodegrid[8]);
+                    points.Add(nodegrid[9]);
+                    points.Add(nodegrid[11]);
+                    points.Add(nodegrid[10]);
+                    break;
+                case 7:
+                    endpoints.Add(nodegrid[1]);
+                    endpoints.Add(nodegrid[8]);
+                    points.Add(nodegrid[0]);
+                    points.Add(nodegrid[8]);
+                    points.Add(nodegrid[9]);
+                    points.Add(nodegrid[1]);
+                    break;
+                case 8:
+                    endpoints.Add(nodegrid[3]);
+                    endpoints.Add(nodegrid[8]);
+                    points.Add(nodegrid[2]);
+                    points.Add(nodegrid[3]);
+                    points.Add(nodegrid[9]);
+                    points.Add(nodegrid[8]);
+                    break;
+                case 9:
+                    endpoints.Add(nodegrid[5]);
+                    endpoints.Add(nodegrid[10]);
+                    points.Add(nodegrid[4]);
+                    points.Add(nodegrid[5]);
+                    points.Add(nodegrid[11]);
+                    points.Add(nodegrid[10]);
+                    break;
+                case 10:
+                    endpoints.Add(nodegrid[7]);
+                    endpoints.Add(nodegrid[10]);
+                    points.Add(nodegrid[6]);
+                    points.Add(nodegrid[7]);
+                    points.Add(nodegrid[11]);
+                    points.Add(nodegrid[10]);
                     break;
             }
             diagonal = new Line(endpoints[0], endpoints[1]);
         }
+        //public DiagonalMember(int dNum,Brep bound)
+        //{
+        //    dnum = dNum;
+        //    switch (dNum)
+        //    {
+        //        case 0:
+        //            endpoints.Add(bound.Vertices[1].Location);
+        //            endpoints.Add(bound.Vertices[6].Location);
+        //            points.Add(bound.Vertices[1].Location);
+        //            points.Add(bound.Vertices[0].Location);
+        //            points.Add(bound.Vertices[6].Location);
+        //            points.Add(bound.Vertices[7].Location);
+        //            break;
+        //        case 1:
+        //            endpoints.Add(bound.Vertices[2].Location);
+        //            endpoints.Add(bound.Vertices[6].Location);
+        //            points.Add(bound.Vertices[0].Location);
+        //            points.Add(bound.Vertices[2].Location);
+        //            points.Add(bound.Vertices[4].Location);
+        //            points.Add(bound.Vertices[6].Location);
+        //            break;
+        //        case 2:
+        //            endpoints.Add(bound.Vertices[2].Location);
+        //            endpoints.Add(bound.Vertices[5].Location);
+        //            points.Add(bound.Vertices[3].Location);
+        //            points.Add(bound.Vertices[2].Location);
+        //            points.Add(bound.Vertices[4].Location);
+        //            points.Add(bound.Vertices[5].Location);
+        //            break;
+        //        case 3:
+        //            endpoints.Add(bound.Vertices[5].Location);
+        //            endpoints.Add(bound.Vertices[1].Location);
+        //            points.Add(bound.Vertices[1].Location);
+        //            points.Add(bound.Vertices[3].Location);
+        //            points.Add(bound.Vertices[5].Location);
+        //            points.Add(bound.Vertices[7].Location);
+        //            break;
+        //        case 4:
+        //            endpoints.Add(bound.Vertices[1].Location);
+        //            endpoints.Add(bound.Vertices[2].Location);
+        //            points.Add(bound.Vertices[1].Location);
+        //            points.Add(bound.Vertices[0].Location);
+        //            points.Add(bound.Vertices[2].Location);
+        //            points.Add(bound.Vertices[3].Location);
+        //            break;
+        //        case 5:
+        //            endpoints.Add(bound.Vertices[5].Location);
+        //            endpoints.Add(bound.Vertices[6].Location);
+        //            points.Add(bound.Vertices[4].Location);
+        //            points.Add(bound.Vertices[5].Location);
+        //            points.Add(bound.Vertices[7].Location);
+        //            points.Add(bound.Vertices[6].Location);
+        //            break;
+        //    }
+        //    diagonal = new Line(endpoints[0], endpoints[1]);
+        //}
         public void trim(Mesh m)
         {
             if (StructuralCell.curveIsInsideMesh(diagonal.ToNurbsCurve(), m))

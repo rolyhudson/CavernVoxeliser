@@ -77,6 +77,8 @@
     <Compile Include="CavernModuleElements.cs" />
     <Compile Include="CavernVoxelComponent.cs" />
     <Compile Include="CavernVoxelInfo.cs" />
+    <Compile Include="CombineModelRefs.cs" />
+    <Compile Include="CombineRhinoFiles.cs" />
     <Compile Include="DiagonalMember.cs" />
     <Compile Include="DXFwriter.cs" />
     <Compile Include="MeshTools.cs" />

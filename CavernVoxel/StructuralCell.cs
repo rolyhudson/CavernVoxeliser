@@ -48,9 +48,9 @@ namespace CavernVoxel
         Vector3d toOutside;
         double memberSize;
         List<DiagonalMember> diagonalMembers = new List<DiagonalMember>();
-        
-        
-        public StructuralCell(Plane cellplane,double xdim,double ydim,double zdim, double memberDim,string ID,bool filler)
+        public List<Point3d> basePoints = new List<Point3d>();
+        List<Point3d> nodeGrid = new List<Point3d>();
+        public StructuralCell(Plane cellplane,double xdim,double ydim,double zdim, double memberDim,string ID,bool filler,Color c)
         {
             cellPlane = cellplane;
             xDim = xdim;
@@ -63,7 +63,7 @@ namespace CavernVoxel
             id = ID;
             setPositionFromID();
             fillerCell = filler;
-            setColor();
+            displayColor = c;
             setInnerBound();
             centreLines = untrimmedCentreLines;
             storeDiagonals();
@@ -123,24 +123,64 @@ namespace CavernVoxel
             //rhino mesh offset is with vertex normal
             Mesh offset = boundary.Offset(root);
             innerBoundary = Brep.CreateFromMesh(offset, false);
-            foreach(BrepEdge be in innerBoundary.Edges)
-            {
-                untrimmedCentreLines.Add(be.DuplicateCurve());
-            }
-            //add diagonals
             
-            for (int d = 0; d < 6; d++) diagonalMembers.Add(new DiagonalMember(d, innerBoundary));
+            foreach(BrepVertex p in innerBoundary.Vertices)
+            {
+                nodeGrid.Add(p.Location);
+            }
+            nodeGrid.Add(new Line(nodeGrid[0], nodeGrid[2]).PointAt(0.5));
+            nodeGrid.Add(new Line(nodeGrid[1], nodeGrid[3]).PointAt(0.5));
+            nodeGrid.Add(new Line(nodeGrid[6], nodeGrid[4]).PointAt(0.5));
+            nodeGrid.Add(new Line(nodeGrid[7], nodeGrid[5]).PointAt(0.5));
+
+            setCentreLines();
+            //foreach(BrepEdge be in innerBoundary.Edges)
+            //{
+            //    untrimmedCentreLines.Add(be.DuplicateCurve());
+            //}
+            ////add diagonals
+
+            for (int d = 0; d < 11; d++) diagonalMembers.Add(new DiagonalMember(d, nodeGrid));
             //set the faceboundaries
-            setBoundaryPlaneCurves();
+            setBoundaryGeometry();
         }
-        
-        private void setBoundaryPlaneCurves()
+        private void setCentreLines()
+        {
+            //base
+            untrimmedCentreLines.Add(new Line(nodeGrid[0], nodeGrid[8]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[1], nodeGrid[9]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[2], nodeGrid[8]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[3], nodeGrid[9]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[2], nodeGrid[3]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[0], nodeGrid[1]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[8], nodeGrid[9]).ToNurbsCurve());
+            //top
+            untrimmedCentreLines.Add(new Line(nodeGrid[4], nodeGrid[10]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[5], nodeGrid[11]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[6], nodeGrid[10]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[7], nodeGrid[11]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[4], nodeGrid[5]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[6], nodeGrid[7]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[10], nodeGrid[11]).ToNurbsCurve());
+            //verticals
+            untrimmedCentreLines.Add(new Line(nodeGrid[0], nodeGrid[6]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[1], nodeGrid[7]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[2], nodeGrid[4]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[3], nodeGrid[5]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[8], nodeGrid[10]).ToNurbsCurve());
+            untrimmedCentreLines.Add(new Line(nodeGrid[9], nodeGrid[11]).ToNurbsCurve());
+        }
+        private void setBoundaryGeometry()
         {
             outerBoundary = Brep.CreateFromMesh(boundary, false);
             boundCurve0 = outerBoundary.Faces[2].OuterLoop.To3dCurve();
             boundCurve1 = outerBoundary.Faces[4].OuterLoop.To3dCurve();
             boundPlane0 = new Plane(outerBoundary.Faces[2].PointAt(0.5, 0.5), outerBoundary.Faces[2].NormalAt(0.5, 0.5));
             boundPlane1 = new Plane(outerBoundary.Faces[4].PointAt(0.5, 0.5), outerBoundary.Faces[4].NormalAt(0.5, 0.5));
+            basePoints.Add(outerBoundary.Vertices[0].Location);
+            basePoints.Add(outerBoundary.Vertices[1].Location);
+            basePoints.Add(outerBoundary.Vertices[2].Location);
+            basePoints.Add(outerBoundary.Vertices[3].Location);
         }
         private Brep trimOutMillingVolume()
         {

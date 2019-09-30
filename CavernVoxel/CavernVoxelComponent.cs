@@ -45,9 +45,9 @@ namespace CavernVoxel
             pManager.AddBooleanParameter("explore mode", "em", "", GH_ParamAccess.item, true);
             pManager.AddPlaneParameter("reference plane", "rp", "", GH_ParamAccess.item);
             pManager.AddCurveParameter("building grid", "bg", "", GH_ParamAccess.list);
-            pManager.AddSurfaceParameter("slabs", "slbs", "", GH_ParamAccess.list);
+            pManager.AddBrepParameter("slabs", "slbs", "", GH_ParamAccess.list);
             pManager.AddBrepParameter("wall boundary", "wb", "", GH_ParamAccess.list);
-            
+            pManager.AddBrepParameter("roof", "r", "", GH_ParamAccess.list);
             pManager[8].Optional = true;
         }
 
@@ -66,6 +66,7 @@ namespace CavernVoxel
             pManager.AddMeshParameter("section boxes", "sb", "", GH_ParamAccess.tree);
             pManager.AddCurveParameter("grid", "g", "", GH_ParamAccess.tree);
             pManager.AddCurveParameter("links", "l", "", GH_ParamAccess.tree);
+            pManager.AddGenericParameter("undefined cells", "udc", "", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -77,7 +78,8 @@ namespace CavernVoxel
         {
             List<Mesh> meshes = new List<Mesh>();
             List<Curve> bldGrid = new List<Curve>();
-            List<Surface> slabs = new List<Surface>();
+            List<Brep> slabs = new List<Brep>();
+            List<Brep> roof = new List<Brep>();
             double xcell = 0;
             double ycell = 0;
             double zcell = 0;
@@ -100,8 +102,9 @@ namespace CavernVoxel
             if (!DA.GetDataList(9, bldGrid)) return;
             if(!DA.GetDataList(10,slabs)) return;
             if (!DA.GetDataList(11, walls)) return;
+            if (!DA.GetDataList(12, roof)) return;
 
-            VoxelParameters parameters = new VoxelParameters(xcell, ycell, zcell, memberT, exploreMode, startBay, slabs,walls);
+            VoxelParameters parameters = new VoxelParameters(xcell, ycell, zcell, memberT, exploreMode, startBay, slabs,walls,roof);
             MeshVoxeliser mvox = new MeshVoxeliser(meshes, startBay,numBays, refPlane,parameters);
             //VoxelDocumenter vDoc = new VoxelDocumenter();
             //vDoc.writeSection3d(mvox, bldGrid);
@@ -110,14 +113,14 @@ namespace CavernVoxel
             DataTree<StructuralCell> perimeterCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> skinCells = new DataTree<StructuralCell>();
             DataTree<StructuralCell> verticalSupportCells = new DataTree<StructuralCell>();
-            
+            DataTree<StructuralCell> undefinedCells = new DataTree<StructuralCell>();
             GH_Structure<GH_Mesh> caveSlices = new GH_Structure<GH_Mesh>();
             GH_Structure<GH_Mesh> sectionBoxes = new GH_Structure<GH_Mesh>();
             GH_Structure<GH_Curve> grid = new GH_Structure<GH_Curve>();
             GH_Structure<GH_Curve> links = new GH_Structure<GH_Curve>();
 
             getSlices(mvox, ref caveSlices,ref sectionBoxes, ref grid,ref links);
-            getModules(mvox, ref perimeterCells, ref skinCells, ref verticalSupportCells);
+            getModules(mvox, ref perimeterCells, ref skinCells, ref verticalSupportCells, ref undefinedCells);
             
             
             DA.SetDataTree(0, skinCells);
@@ -127,10 +130,11 @@ namespace CavernVoxel
             DA.SetDataTree(4, sectionBoxes);
             DA.SetDataTree(5, grid);
             DA.SetDataTree(6, links);
+            DA.SetDataTree(7, undefinedCells);
         }
-        
-        private void getModules(MeshVoxeliser mvox,ref DataTree<StructuralCell> perimeterCells, ref DataTree<StructuralCell> trimCells, 
-            ref DataTree<StructuralCell> verticalCells)
+
+        private void getModules(MeshVoxeliser mvox, ref DataTree<StructuralCell> perimeterCells, ref DataTree<StructuralCell> trimCells,
+            ref DataTree<StructuralCell> verticalCells, ref DataTree<StructuralCell> undefinedCells)
         {
             int bay = 0;
             int side = 0;
@@ -159,6 +163,10 @@ namespace CavernVoxel
                                     case StructuralCell.CellType.VerticalFillCell:
                                         verticalCells.Add(c, path);
                                         break;
+                                    case StructuralCell.CellType.Undefined:
+                                        undefinedCells.Add(c, path);
+                                        break;
+
                                 }
 
                                 cell++;

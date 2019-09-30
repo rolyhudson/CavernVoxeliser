@@ -303,10 +303,10 @@ namespace CavernVoxel
         {
             int col = 0;
             int row = 0;
-            double pWidth = minX+2000;
+            
             Vector3d shift = new Vector3d(plnA.Origin);
             shift.Z = shift.Z - 100;
-            Vector3d panelShift = new Vector3d(pWidth, 0, 0);
+            Vector3d panelShift = new Vector3d();
             foreach (StructuralCell sc in scs)
             {
                 //intersect the cave face with the plan
@@ -316,8 +316,8 @@ namespace CavernVoxel
                         if (sc.caveFace != null)
                         {
                             attCavepanels.ObjectColor = sc.displayColor;
-                            panelShift = new Vector3d(col * 2500, row * 2500, 0);
-                            panelShift.X = panelShift.X + pWidth;
+                            panelShift = new Vector3d(col * 2500, (row+1) * -2500, 0);
+                            
                             Plane txtpln = Plane.WorldXY;
                             txtpln.Transform(Transform.Translation(shift+panelShift));
 
@@ -371,6 +371,10 @@ namespace CavernVoxel
                             if (c.cellType != StructuralCell.CellType.InsideCell && c.cellType != StructuralCell.CellType.Undefined)
                             {
                                 attCavepanels.ObjectColor = c.displayColor;
+                                if (c.id == "06_00_0_17_0")
+                                {
+                                    int g = 0;
+                                }
                                 if (c.caveFace != null)
                                 {
                                     c.caveFace.Transform(transform);
