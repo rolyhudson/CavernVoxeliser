@@ -103,19 +103,26 @@ namespace CavernVoxel
             {
                 foreach (StructuralCell c in sc)
                 {
-                    bool intersect = false;
-                    
+                    if(c.id== "02_08_0_4_2")
+                    {
+                        int g = 0;
+                    }
                     Interval yint = new Interval(-c.yDim / 2, c.yDim);
                     if(baynum%2==0) yint = new Interval(-c.yDim, c.yDim/2);
                     //extend splitter to avoid edge alignment
                     Mesh extendSplitter = MeshTools.makeCuboid(c.cellPlane, c.xDim, yint, c.zDim);
-                    Mesh caveface = MeshTools.splitMeshWithMesh(slice, extendSplitter);
-                    if (caveface != null) intersect = true;
-                    if (intersect)
+                    var intersectCurve = Rhino.Geometry.Intersect.Intersection.MeshMeshAccurate(slice, extendSplitter, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+                    if (intersectCurve!=null)
                     {
-                        MeshTools.matchOrientation(slice, ref caveface);
+                        if (intersectCurve.Length > 0)
+                        {
+                            //we know there is defintely an intersection if we have result from MeshMesh
+                            Mesh caveface = MeshTools.findIntersection(slice, c, yint);
+                            if (caveface == null) return;
+                            MeshTools.matchOrientation(slice, ref caveface);
+                            c.setSkinCell(caveface);
+                        }
                         
-                        c.setSkinCell(caveface);
                     }
                 }
             }
@@ -186,7 +193,7 @@ namespace CavernVoxel
                         int outsideCount = 0;
                         foreach (Brep w in parameters.wall)
                         {
-                            bool inside = w.IsPointInside(c.centroid, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, false);
+                            bool inside = w.IsPointInside(c.centroid, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, true);
                             if (!inside) outsideCount++;
                         }
                         //cells should be inside one of the wall breps

@@ -11,27 +11,69 @@ namespace CavernVoxel
 {
     class MeshTools
     {
+        public static Mesh findIntersection(Mesh meshToSplit, StructuralCell c,Interval extend)
+        {
+            Mesh extendSplitter = makeCuboid(c.cellPlane, c.xDim, extend, c.zDim);
+            Mesh result = splitMeshWithMesh(meshToSplit, extendSplitter);
+            int inc = 2;
+            if (result == null)
+            {
+                while (result==null)
+                {
+                    //make a bigger splitter
+                    
+                    extendSplitter = makeCuboid(c.cellPlane, c.xDim+inc, extend+inc, c.zDim+inc);
+                    result = splitMeshWithMesh(meshToSplit, extendSplitter);
+                    inc += 2;
+                }
+            }
+            else
+            {
+                //could be jagged border result
+                while(isJaggedBorder(result, extendSplitter))
+                {
+                    
+                    extendSplitter = makeCuboid(c.cellPlane, c.xDim + inc, extend + inc, c.zDim + inc);
+                    result = splitMeshWithMesh(meshToSplit, extendSplitter);
+                    inc += 2;
+                }
+                //try increase in closedSplitter
+            }
+            return result;
+        }
+        private static bool isJaggedBorder(Mesh result,Mesh extendSplitter)
+        {
+            bool jagged = false;
+            int outside = 0;
+            foreach (Point3d p in result.Vertices)
+            {
+                //if its a jagged border the points should be outside
+                if (extendSplitter.IsPointInside(p, 10, false))
+                {
+                    //return true;
+                    outside++;
+                }
+            }
+            if (outside > 0) return true;
+            return jagged;
+        }
         public static Mesh splitMeshWithMesh(Mesh meshToSplit, Mesh closedSplitter)
         {
             var splits = meshToSplit.Split(closedSplitter);
-
-            if (splits != null)
+            if (splits.Count() > 0)
             {
-                if (splits.Count() > 0)
+                //get the samller of the two
+                if (splits[0].Vertices.Count > splits[1].Vertices.Count)
                 {
-                    //assuming the contained part has fewer vertices than the rest of the cavern
-                    if (splits[0].Vertices.Count > splits[1].Vertices.Count)
-                    {
-                        return splits[1];
-                    }
-                    else
-                    {
-                        return splits[0];
-                    }
+                    return splits[1];
                 }
-
+                else
+                {
+                    return splits[0];
+                }
             }
             return null;
+            
         }
         public static bool curveInBrep(Curve c, Brep b)
         {
@@ -96,7 +138,7 @@ namespace CavernVoxel
             Point3d centroid = new Point3d(x / points.Count, y / points.Count, z / points.Count);
             return centroid;
         }
-        private Mesh splitMeshWithPlanes(Mesh toSplit,Mesh splitter)
+        private static Mesh splitMeshWithPlanes(Mesh toSplit,Mesh splitter)
         {
             Point3d boundCentroid = meshCentroid(splitter);
             List<Mesh> results = new List<Mesh>();
@@ -114,7 +156,7 @@ namespace CavernVoxel
                     facePlane.Flip();
                 }
                 trimmedMesh = split(trimmedMesh, facePlane);
-                trimmedMesh.Vertices.CombineIdentical(true, true);
+                
             }
             return trimmedMesh;
         }
@@ -164,9 +206,9 @@ namespace CavernVoxel
         public static Mesh splitTwoPlanes(Plane p1, Plane p2, Mesh m)
         {
             var m1 = split(m, p1);
-            m1.Vertices.CombineIdentical(true, true);
+            
             var m2 = split(m1, p2);
-            m2.Vertices.CombineIdentical(true, true);
+            
             return m2;
         }
         private static Mesh split(Mesh m, Plane p)
@@ -185,6 +227,10 @@ namespace CavernVoxel
                     faceSplit(pts, p, ref splitMesh);
                 }
             }
+            splitMesh.Faces.CullDegenerateFaces();
+            splitMesh.Faces.ExtractDuplicateFaces();
+            splitMesh.Vertices.CullUnused();
+            splitMesh.Vertices.CombineIdentical(true, true);
             return splitMesh;
         }
         private static void faceSplit(List<Point3d> pts, Plane pln, ref Mesh meshToAppend)
@@ -204,7 +250,7 @@ namespace CavernVoxel
 
                 Rhino.Geometry.Intersect.Intersection.LinePlane(l, pln, out t);
 
-                if (t > 0 && t < 1)
+                if (t >= 0 && t <= 1)
                 {
                     newPts.Add(l.PointAt(t));
                 }
@@ -252,7 +298,7 @@ namespace CavernVoxel
         public static bool pointInsidePlane(Point3d p, Plane pln)
         {
             Vector3d v = p - pln.Origin;
-            if (Vector3d.VectorAngle(v, pln.Normal) < Math.PI / 2) return true;
+            if (Vector3d.VectorAngle(v, pln.Normal) <= Math.PI / 2) return true;
             else return false;
         }
 

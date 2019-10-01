@@ -59,6 +59,7 @@ namespace CavernVoxel
             boundary = MeshTools.makeCuboid(cellPlane,xDim,yDim,zDim);
             boundary.FaceNormals.ComputeFaceNormals();
             memberSize = memberDim;
+            
             cellType = CellType.Undefined;
             id = ID;
             setPositionFromID();
@@ -119,9 +120,7 @@ namespace CavernVoxel
         private void setInnerBound()
         {
             centroid = MeshTools.meshCentroid(boundary);
-            double root = Math.Sqrt(memberSize/2 * memberSize/2 * 3);
-            //rhino mesh offset is with vertex normal
-            Mesh offset = boundary.Offset(root);
+            Mesh offset = MeshTools.makeCuboid(cellPlane, xDim - memberSize, yDim - memberSize, zDim - memberSize);
             innerBoundary = Brep.CreateFromMesh(offset, false);
             
             foreach(BrepVertex p in innerBoundary.Vertices)
