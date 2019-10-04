@@ -11,51 +11,40 @@ namespace CavernVoxel
 {
     class MeshTools
     {
-        public static Mesh findIntersection(Mesh meshToSplit, StructuralCell c,Interval extend)
+        public static Mesh findIntersection(Mesh meshToSplit, StructuralCell c)
         {
-            Mesh extendSplitter = makeCuboid(c.cellPlane, c.xDim, extend, c.zDim);
+            Mesh extendSplitter = makeCuboid(c.cellPlane, c.xDim,c.yDim, c.zDim);
             Mesh result = splitMeshWithMesh(meshToSplit, extendSplitter);
-            int inc = 2;
-            if (result == null)
+            int inc = 0;
+
+            while (result == null || isJaggedBorder(result, extendSplitter))
             {
-                while (result==null)
-                {
-                    //make a bigger splitter
-                    
-                    extendSplitter = makeCuboid(c.cellPlane, c.xDim+inc, extend+inc, c.zDim+inc);
-                    result = splitMeshWithMesh(meshToSplit, extendSplitter);
-                    inc += 2;
-                }
+                //make a bigger splitter
+                inc -= 1;
+                if (inc < -10) break;
+                extendSplitter = makeCuboid(c.cellPlane, c.xDim + inc, c.yDim + inc, c.zDim + inc);
+                
+                result = splitMeshWithMesh(meshToSplit, extendSplitter);
             }
-            else
-            {
-                //could be jagged border result
-                while(isJaggedBorder(result, extendSplitter))
-                {
-                    
-                    extendSplitter = makeCuboid(c.cellPlane, c.xDim + inc, extend + inc, c.zDim + inc);
-                    result = splitMeshWithMesh(meshToSplit, extendSplitter);
-                    inc += 2;
-                }
-                //try increase in closedSplitter
-            }
+            
             return result;
         }
         private static bool isJaggedBorder(Mesh result,Mesh extendSplitter)
         {
-            bool jagged = false;
-            int outside = 0;
-            foreach (Point3d p in result.Vertices)
+            foreach (MeshFace mf in result.Faces)
             {
-                //if its a jagged border the points should be outside
-                if (extendSplitter.IsPointInside(p, 10, false))
+                //if its a jagged border the face centroid points should be outside
+                Point3d p = new Point3d(0,0,0);
+                p.X = (result.Vertices[mf.A].X + result.Vertices[mf.B].X + result.Vertices[mf.C].X + result.Vertices[mf.D].X)/4;
+                p.Y = (result.Vertices[mf.A].Y + result.Vertices[mf.B].Y + result.Vertices[mf.C].Y + result.Vertices[mf.D].Y) / 4;
+                p.Z = (result.Vertices[mf.A].Z + result.Vertices[mf.B].Z + result.Vertices[mf.C].Z + result.Vertices[mf.D].Z) / 4;
+                if (!extendSplitter.IsPointInside(p, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, false))
                 {
-                    //return true;
-                    outside++;
+                    //found a face centroid outside the splitter
+                    return true;
                 }
             }
-            if (outside > 0) return true;
-            return jagged;
+            return false;
         }
         public static Mesh splitMeshWithMesh(Mesh meshToSplit, Mesh closedSplitter)
         {

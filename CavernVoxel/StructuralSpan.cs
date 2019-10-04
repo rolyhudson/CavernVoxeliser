@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino.Display;
+using Rhino;
 
 namespace CavernVoxel
 {
@@ -255,6 +256,7 @@ namespace CavernVoxel
         }
         private void findVerticalFit()
         {
+            
             double min = Double.MaxValue;
             double max = Double.MinValue;
             minMaxFromPlane(slice, referencePlane, ref min, ref max);
@@ -263,6 +265,35 @@ namespace CavernVoxel
 
             referencePlane.Origin = referencePlane.Origin + shift * min;
             parameters.unitsZ = Convert.ToInt32(Math.Ceiling((max - min) / parameters.zCell))+1;
+            
+        }
+        private double findRoofLevel()
+        {
+            double level = 0;
+            //project mesh to plane
+            Polyline[] outlines = slice.GetOutlines(referencePlane);
+            foreach(Polyline pl in outlines)
+            {
+                //loop the boundaries
+                foreach(Point3d p in pl)
+                {
+                    //loop the points
+                    Line l = new Line(p, Vector3d.ZAxis, 100000);
+                    foreach(Brep r in parameters.roofs)
+                    {
+                        //check for brep above
+                        Point3d[] points;
+                        Curve[] curves;
+                        Rhino.Geometry.Intersect.Intersection.CurveBrep(l.ToNurbsCurve(), r, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance, out curves, out points);
+                        if (points != null && points.Length > 0)
+                        {
+                            var sorted = points.OrderByDescending(x=>x.Z).ToList();
+                            if (sorted[0].DistanceTo(p) > level) level = sorted[0].DistanceTo(p);
+                        }
+                    }
+                }
+            }
+            return level;
         }
         private void minMaxFromPlane(Mesh mesh, Plane refPln, ref double min, ref double max)
         {

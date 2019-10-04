@@ -23,6 +23,7 @@ namespace CavernVoxel
         KDTree<double> tree;
         public int baynum;
         Random r = new Random();
+        string cellDebugId = "03_08_1_7_4";
         public StructuralBay(Mesh sliceToVoxelise, Plane minpln,Plane maxpln, VoxelParameters voxelParameters,bool firstBay, int num)
         {
             voxels.Add(new List<StructuralCell>());
@@ -85,6 +86,7 @@ namespace CavernVoxel
                 }
             }
             //determine and adjust the modules laterally
+
             boundaryChecks();
             //remove nulls either too small or not fitting
             foreach (List<StructuralCell> sc in voxels) sc.RemoveAll(x => x == null);
@@ -92,10 +94,62 @@ namespace CavernVoxel
             buildBaseModules();
             //remove nulls either too small or not fitting
             foreach (List<StructuralCell> sc in voxels) sc.RemoveAll(x => x == null);
+            roofLevelCheck();
+            //remove nulls either too small or not fitting
+            foreach (List<StructuralCell> sc in voxels) sc.RemoveAll(x => x == null);
 
             defineSkinCells();
             setSupports();
             
+        }
+        private void roofLevelCheck()
+        {
+            foreach (List<StructuralCell> sc in voxels)
+            {
+                for (int i = 0; i < sc.Count; i++)
+                {
+                    if (sc[i].id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
+                    Point3d slabPt = new Point3d();
+                    findClosestSlabPoint(sc[i], ref slabPt, true);
+                    //the base is above slab cell is nulled
+                    if (slabPt.Z < sc[i].basePoints[0].Z)
+                    {
+                        sc[i] = null;
+                        continue;
+                    }
+                    double diff = slabPt.Z - sc[i].basePoints[0].Z;
+                    if (diff > parameters.zCell + parameters.fillerMinimum)
+                    {
+                        //no change needed
+                        continue;
+                    }
+                    if(diff< parameters.zCell + parameters.fillerMinimum&&diff>= parameters.zCell)
+                    {
+                        //extend this cell
+                        StructuralCell c = sc[i];
+                        adjustModuleVertical(ref c, slabPt, false);
+                        sc[i] = c;
+                        continue;
+                    }
+                    //slab is above base but diff is smaller than top cell H
+                    if (diff < parameters.fillerMinimum)
+                    {
+                        sc[i] = null;
+                        continue;
+                    }
+                    if (diff < parameters.zCell)
+                    {
+                        //reduce this cell
+                        StructuralCell c = sc[i];
+                        adjustModuleVertical(ref c, slabPt, false);
+                        sc[i] = c;
+                        continue;
+                    }
+                }
+            }
         }
         private void defineSkinCells()
         {
@@ -103,21 +157,18 @@ namespace CavernVoxel
             {
                 foreach (StructuralCell c in sc)
                 {
-                    if(c.id== "02_08_0_4_2")
+                    if (c.id == cellDebugId)
                     {
                         int g = 0;
                     }
-                    Interval yint = new Interval(-c.yDim / 2, c.yDim);
-                    if(baynum%2==0) yint = new Interval(-c.yDim, c.yDim/2);
-                    //extend splitter to avoid edge alignment
-                    Mesh extendSplitter = MeshTools.makeCuboid(c.cellPlane, c.xDim, yint, c.zDim);
+                    Mesh extendSplitter = MeshTools.makeCuboid(c.cellPlane, c.xDim, c.yDim, c.zDim);
                     var intersectCurve = Rhino.Geometry.Intersect.Intersection.MeshMeshAccurate(slice, extendSplitter, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
                     if (intersectCurve!=null)
                     {
                         if (intersectCurve.Length > 0)
                         {
                             //we know there is defintely an intersection if we have result from MeshMesh
-                            Mesh caveface = MeshTools.findIntersection(slice, c, yint);
+                            Mesh caveface = MeshTools.findIntersection(slice, c);
                             if (caveface == null) return;
                             MeshTools.matchOrientation(slice, ref caveface);
                             c.setSkinCell(caveface);
@@ -134,9 +185,14 @@ namespace CavernVoxel
             {
                 for(int i=0;i< sc.Count;i++)
                 {
+                    if (sc[i].id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
                     if (sc[i].cellType==StructuralCell.CellType.Undefined)
                     {
                         //does it have a non support on one side
+                        
                         bool side = hasNonSupportCellLeftOrRight(sc, sc[i]);
                         //does it have a non support below
                         bool below = hasNonSupportCellBelow(sc, sc[i]);
@@ -158,9 +214,14 @@ namespace CavernVoxel
             {
                 for (int i = 0; i < sc.Count; i++)
                 {
-                    if(sc[i].cellType == StructuralCell.CellType.PerimeterCell || sc[i].cellType == StructuralCell.CellType.VerticalFillCell)
+                    if (sc[i].id == cellDebugId)
                     {
-                        if (noCellsAbove(sc[i]))
+                        int g = 0;
+                    }
+                    if (sc[i].cellType == StructuralCell.CellType.PerimeterCell || sc[i].cellType == StructuralCell.CellType.VerticalFillCell)
+                    {
+                        //if its got no cells above or has not already been reduced vertically
+                        if (noCellsAbove(sc[i])&&sc[i].zDim==parameters.zCell)
                         {
                             Plane cellPlane = new Plane(sc[i].centroid - Vector3d.ZAxis * parameters.topCellH / 2, minPlane.XAxis, minPlane.YAxis);
                             sc[i] = new StructuralCell(cellPlane, sc[i].xDim, sc[i].yDim, parameters.topCellH, parameters.memberSize, sc[i].id, false, setColor(r));
@@ -178,7 +239,8 @@ namespace CavernVoxel
             c.side == cell.side && 
             c.colNum == cell.colNum && 
             c.rowNum>cell.rowNum && 
-            c.cellType!= StructuralCell.CellType.Undefined);
+            c.cellType!= StructuralCell.CellType.Undefined&&
+            c.cellType!= StructuralCell.CellType.InsideCell);
             if (cellsFill.Count > 0) nocells = false;
             return nocells;
         }
@@ -188,7 +250,11 @@ namespace CavernVoxel
             {
                 foreach (StructuralCell c in sc)
                 {
-                    if(c.cellType!= StructuralCell.CellType.Undefined)
+                    if (c.id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
+                    if (c.cellType!= StructuralCell.CellType.Undefined)
                     {
                         int outsideCount = 0;
                         foreach (Brep w in parameters.wall)
@@ -211,6 +277,10 @@ namespace CavernVoxel
             {
                 for(int i=0;i< sc.Count;i++)
                 {
+                    if (sc[i].id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
                     StructuralCell c = sc[i];
                     foreach (Brep w in parameters.wall)
                     {
@@ -308,17 +378,19 @@ namespace CavernVoxel
 
             c = new StructuralCell(cellPlane, c.xDim,newY,c.zDim, parameters.memberSize, c.id, false, setColor(r));
         }
-        private void adjustModuleVertical(ref StructuralCell c,Point3d slabPt)
+        private void adjustModuleVertical(ref StructuralCell c,Point3d slabPt,bool floor)
         {
             double newH = 0;
             if (slabPt.Z > c.centroid.Z)
             {
-                newH = parameters.zCell/2 - (slabPt.Z - c.centroid.Z);
+                if(floor) newH = parameters.zCell/2 - (slabPt.Z - c.centroid.Z);
+                else newH = parameters.zCell / 2 + (slabPt.Z - c.centroid.Z);
             }
             else
             {
                 double d = (c.centroid.Z - slabPt.Z);
-                newH = parameters.zCell/2 + d;
+                if(floor) newH = parameters.zCell/2 + d;
+                else newH = parameters.zCell / 2 - d;
             }
             if (newH < parameters.fillerMinimum)
             {
@@ -327,19 +399,22 @@ namespace CavernVoxel
                 return;
             }
             Point3d origin = new Point3d(c.centroid.X, c.centroid.Y, slabPt.Z);
-            Plane cellPlane = new Plane(origin + Vector3d.ZAxis*newH/2, minPlane.XAxis, minPlane.YAxis);
-            
+            Plane cellPlane = new Plane();
+            if(floor)cellPlane = new Plane(origin + Vector3d.ZAxis*newH/2, minPlane.XAxis, minPlane.YAxis);
+            else cellPlane = new Plane(origin - Vector3d.ZAxis * newH / 2, minPlane.XAxis, minPlane.YAxis);
+
             c = new StructuralCell(cellPlane, c.xDim,c.yDim,newH, parameters.memberSize, c.id, false, setColor(r));
         }
-        private bool findClosestSlabPoint(StructuralCell cell,ref Point3d slabPt)
+        private bool findClosestSlabPoint(StructuralCell cell,ref Point3d slabPt,bool up)
         {
-            
+            List<Brep> slabs = parameters.slabs;
+            if (up) slabs = parameters.roofs;
             List<Point3d> inters = new List<Point3d>();
             
             foreach(Point3d p in cell.basePoints)
             {
                 Line down = new Line(p - Vector3d.ZAxis * 50000, Vector3d.ZAxis, 100000);
-                foreach (Brep s in parameters.slabs)
+                foreach (Brep s in slabs)
                 {
                     Curve[] curves;
                     Point3d[] points;
@@ -353,8 +428,9 @@ namespace CavernVoxel
                 }
             }
             if (inters.Count == 0) return false;
-            var sorted = inters.OrderByDescending(p => p.Z).ToList();
-            
+            List<Point3d> sorted = new List<Point3d>();
+            if(up)sorted  = inters.OrderBy(p => p.Z).ToList();//smallest first for roofs
+            else sorted = inters.OrderByDescending(p => p.Z).ToList();//biggest first for floor slabs
             slabPt = sorted[0];
             return true;
         }
@@ -366,16 +442,16 @@ namespace CavernVoxel
             {
                 for(int i =0;i< sc.Count;i++)
                 {
+                    if (sc[i].id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
                     StructuralCell c = sc[i];
                     if (c.rowNum == 0)
                     {
-                        if (c.id == "03_02_0_2_0")
-                        {
-                            int g = 0;
-                        }
                         Point3d slabPt = new Point3d();
                         
-                        bool foundslab = findClosestSlabPoint(sc[i],ref slabPt);
+                        bool foundslab = findClosestSlabPoint(sc[i],ref slabPt,false);
                         
                         if (foundslab)
                         {
@@ -386,7 +462,7 @@ namespace CavernVoxel
                             {
                                 //smaller than half module
                                 //replace with smaller module
-                                adjustModuleVertical(ref c, slabPt);
+                                adjustModuleVertical(ref c, slabPt,true);
                                 sc[i] = c;
                                 
                             }
@@ -417,6 +493,10 @@ namespace CavernVoxel
             {
                 foreach (StructuralCell c in sc)
                 {
+                    if (c.id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
                     if (c.cellType == StructuralCell.CellType.VerticalFillCell || c.cellType == StructuralCell.CellType.PerimeterCell)
                     {
                         if (hasDiagonalNeighbour(c))
@@ -439,6 +519,8 @@ namespace CavernVoxel
             //get all the cells on the other side
             var cells = voxels[0];
             if(cell.side==0) cells = voxels[1];
+            //if there are no cells on the other side nothing to do here
+            if (cells.Count == 0) return;
             //get the row of this cell
             var row = cells.FindAll(c => c.rowNum == cell.rowNum).OrderByDescending(x=>x.colNum).ToList();
             //closest is the first in the list
@@ -621,6 +703,10 @@ namespace CavernVoxel
             {
                 foreach (StructuralCell c in sc)
                 {
+                    if (c.id == cellDebugId)
+                    {
+                        int g = 0;
+                    }
                     if (c.cellType == StructuralCell.CellType.Undefined)
                     {
                         bool above = hasCellsAbove(sc, c);
@@ -702,7 +788,7 @@ namespace CavernVoxel
             Point3d cellCentre = basePt + shift;
             Plane cellpln = new Plane(cellCentre, minPlane.XAxis, maxPlane.YAxis);
             string mCode = genMCode(ab, x, z);
-            if(mCode== "06_00_0_19_0")
+            if (mCode == cellDebugId)
             {
                 int g = 0;
             }
