@@ -27,8 +27,12 @@ namespace CavernVoxel
         public List<Brep> roofs = new List<Brep>();
         public List<Brep> wall;
         public double topCellH;
-        public VoxelParameters(double x, double y, double z, double memberDim,bool exploreMode, int sectNum,List<Brep> slbs, List<Brep> wll, List<Brep> rf)
+        public int partNumber;
+        public bool hanging = false;
+        public VoxelParameters(int partNum,double x, double y, double z, double memberDim,bool exploreMode, int sectNum,List<Brep> slbs, List<Brep> wll, List<Brep> rf)
         {
+            partNumber = partNum;
+            if (partNum == 2 || partNum == 4) hanging = true;
             xCell = x;
             yCell = y;
             zCell = z;

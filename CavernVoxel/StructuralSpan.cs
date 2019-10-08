@@ -34,7 +34,7 @@ namespace CavernVoxel
             findVerticalFit();
             findHorizFit();
             structuralBays.Add(new StructuralBay(slice, minPlane, maxPlane, parameters, true,firstBay));
-            structuralBays.Add(new StructuralBay(structuralBays[0]));
+            //structuralBays.Add(new StructuralBay(structuralBays[0]));
             setLinkElements();
             setGrid();
         }
@@ -55,7 +55,7 @@ namespace CavernVoxel
         }
         private void setGrid()
         {
-            for(int y = 0; y < 3; y++)
+            for(int y = 0; y < 2; y++)
             {
                 Vector3d shiftY = minPlane.YAxis * y * parameters.yCell;
                 Line grid1 = new Line(minPlane.Origin+shiftY, maxPlane.Origin + shiftY);
@@ -113,18 +113,18 @@ namespace CavernVoxel
                 }
             }
             //y links just need to check first bay against second bay
-            foreach (List<StructuralCell> cells in structuralBays[0].voxels)
-            {
-                var others = structuralBays[1].voxels.SelectMany(sc => sc).ToList();
-                foreach (StructuralCell c in cells)
-                {
-                    if (c.cellType != StructuralCell.CellType.Undefined)
-                    {
-                        if (hasCellInFront(c, others)) makeLinks("y", c);
+            //foreach (List<StructuralCell> cells in structuralBays[0].voxels)
+            //{
+            //    var others = structuralBays[1].voxels.SelectMany(sc => sc).ToList();
+            //    foreach (StructuralCell c in cells)
+            //    {
+            //        if (c.cellType != StructuralCell.CellType.Undefined)
+            //        {
+            //            if (hasCellInFront(c, others)) makeLinks("y", c);
                         
-                    }
-                }
-            }
+            //        }
+            //    }
+            //}
         }
         private bool hasCellInFront(StructuralCell cell, List<StructuralCell> cells)
         {

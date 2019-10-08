@@ -25,7 +25,7 @@ namespace CavernVoxel
         
         
         Mesh baseCell = new Mesh();
-        public MeshVoxeliser(List<Mesh> meshes, int startBay, int endBay, Plane refPlane, VoxelParameters prms)
+        public MeshVoxeliser(List<Mesh> meshes, int endBay, Plane refPlane, VoxelParameters prms)
         {
             parameters = prms;
             meshesToVoxelise = meshes;
@@ -33,9 +33,9 @@ namespace CavernVoxel
             meshesToVoxelise.ForEach(m => m.Normals.ComputeNormals());
             meshesToVoxelise.ForEach(m => m.FaceNormals.ComputeFaceNormals());
             gridPlane = refPlane;
-            setText(startBay);
+            setText(parameters.partNumber);
             //findBBox();
-            setupSpans(startBay,endBay);
+            setupSpans(endBay);
             
         }
         private void setText(int num)
@@ -45,22 +45,22 @@ namespace CavernVoxel
             if (num < 10) sNum = "0" + sNum;
             sectionNum = new Text3d(sNum,txtPln,1000);
         }
-        private void setupSpans(int start,int end)
+        private void setupSpans(int end)
         {
 
-            for (int y = 0; y < end; y+=2)//unitsY
+            for (int y = 0; y < end; y++)//unitsY
             {
                 Vector3d shiftY = gridPlane.YAxis * y * parameters.yCell;
                 Point3d basePt = new Point3d(gridPlane.OriginX, gridPlane.OriginY, gridPlane.OriginZ);
                 Point3d origin = basePt + shiftY;
                 Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
                 //containing box with allowance in x and z directions
-                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell * 2), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
+                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
                 Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
                 spanBoxes.Add(sectionVolume);
 
                 Plane p1 = new Plane(origin, gridPlane.YAxis);
-                Plane p2 = new Plane(origin + gridPlane.YAxis * parameters.yCell * 2, gridPlane.YAxis * -1);
+                Plane p2 = new Plane(origin + gridPlane.YAxis * parameters.yCell, gridPlane.YAxis * -1);
                 
                 //Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
                 Mesh slice = MeshTools.splitTwoPlanes(p1, p2, meshesToVoxelise[0]);

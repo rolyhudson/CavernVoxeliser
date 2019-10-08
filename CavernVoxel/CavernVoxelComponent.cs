@@ -104,8 +104,8 @@ namespace CavernVoxel
             if (!DA.GetDataList(11, walls)) return;
             if (!DA.GetDataList(12, roof)) return;
 
-            VoxelParameters parameters = new VoxelParameters(xcell, ycell, zcell, memberT, exploreMode, startBay, slabs,walls,roof);
-            MeshVoxeliser mvox = new MeshVoxeliser(meshes, startBay,numBays, refPlane,parameters);
+            VoxelParameters parameters = new VoxelParameters(startBay, xcell, ycell, zcell, memberT, exploreMode, startBay, slabs,walls,roof);
+            MeshVoxeliser mvox = new MeshVoxeliser(meshes, numBays, refPlane,parameters);
             VoxelDocumenter vDoc = new VoxelDocumenter();
             vDoc.writeSection3d(mvox, bldGrid);
             vDoc.moduleSchedule(mvox);
