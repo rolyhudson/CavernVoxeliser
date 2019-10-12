@@ -28,6 +28,7 @@ namespace CavernVoxel
             pManager.AddTextParameter("output file name", "ofn", "", GH_ParamAccess.item);
             pManager.AddBooleanParameter("run", "r", "", GH_ParamAccess.item, false);
             pManager.AddBrepParameter("reference geometry", "rg", "", GH_ParamAccess.list);
+            pManager.AddBooleanParameter("as references", "ar", "", GH_ParamAccess.item, true);
         }
 
         /// <summary>
@@ -47,15 +48,19 @@ namespace CavernVoxel
             string search = "";
             string outfile = "";
             bool run = false;
+            bool asrefs = true;
             List<Brep> refgeometry = new List<Brep>();
             if (!DA.GetData(0, ref folder)) return;
             if (!DA.GetData(1, ref search)) return;
             if (!DA.GetData(2, ref outfile)) return;
             if (!DA.GetData(3, ref run)) return;
             DA.GetDataList(4, refgeometry);
+            if (!DA.GetData(5, ref asrefs)) return;
             if (run)
             {
-                CombineRhinoFiles rhinoFile = new CombineRhinoFiles(folder, outfile, search,refgeometry);
+                CombineRhinoFiles rhinoFile = new CombineRhinoFiles();
+                if (asrefs) rhinoFile.CombineRhinoFilesAsInstance(folder, outfile, search, refgeometry);
+                else rhinoFile.CombineRhinoFilesAsGeo(folder, outfile, search, refgeometry);
             }
         }
 

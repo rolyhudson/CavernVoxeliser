@@ -145,6 +145,7 @@ namespace CavernVoxel
         }
         private void setCentreLines()
         {
+           
             //base
             untrimmedCentreLines.Add(new Line(nodeGrid[0], nodeGrid[8]).ToNurbsCurve());
             untrimmedCentreLines.Add(new Line(nodeGrid[1], nodeGrid[9]).ToNurbsCurve());

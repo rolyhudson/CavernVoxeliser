@@ -24,15 +24,23 @@ namespace CavernVoxel
         Plane referencePlane;
         
         int bayNum;
-        public StructuralSpan(VoxelParameters vParams,Mesh m,Plane plane,int firstBay)
+        public StructuralSpan(VoxelParameters vParams,Mesh m,Plane plane,int firstBay,Brep container)
         {
             parameters = vParams;
             slice = m;
             referencePlane = plane;
             bayNum = firstBay;
             setBaseGrid();
-            findVerticalFit();
-            findHorizFit();
+            if (parameters.hanging)
+            {
+
+            }
+            else
+            {
+                findVerticalFit();
+                findHorizFit();
+            }
+            
             structuralBays.Add(new StructuralBay(slice, minPlane, maxPlane, parameters, true,firstBay));
             //structuralBays.Add(new StructuralBay(structuralBays[0]));
             setLinkElements();
@@ -44,7 +52,7 @@ namespace CavernVoxel
             {
                 Vector3d shiftY = referencePlane.YAxis * y * parameters.yCell;
                 //add the base grid line
-                Line bGrid = new Line(referencePlane.Origin + shiftY, referencePlane.XAxis, 60000);
+                Line bGrid = new Line(referencePlane.Origin + shiftY, referencePlane.XAxis, parameters.yCell);
                 baseGrid.Add(bGrid);
                 Plane txtPn = new Plane(bGrid.From, referencePlane.XAxis, referencePlane.YAxis);
                 string baynum = (bayNum + y).ToString();

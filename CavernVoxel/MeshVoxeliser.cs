@@ -53,20 +53,29 @@ namespace CavernVoxel
                 Vector3d shiftY = gridPlane.YAxis * y * parameters.yCell;
                 Point3d basePt = new Point3d(gridPlane.OriginX, gridPlane.OriginY, gridPlane.OriginZ);
                 Point3d origin = basePt + shiftY;
-                Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
-                //containing box with allowance in x and z directions
-                Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
-                Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
-                spanBoxes.Add(sectionVolume);
-
+                
                 Plane p1 = new Plane(origin, gridPlane.YAxis);
                 Plane p2 = new Plane(origin + gridPlane.YAxis * parameters.yCell, gridPlane.YAxis * -1);
                 
-                //Mesh slice = MeshTools.splitMeshWithMesh(meshesToVoxelise[0], sectionVolume);
+                //try and slice the mesh
                 Mesh slice = MeshTools.splitTwoPlanes(p1, p2, meshesToVoxelise[0]);
+
                 if (slice != null&&slice.Faces.Count>0)
                 {
-                    structuralSpans.Add(new StructuralSpan(parameters, slice, boxPln, y));
+                    Plane boxPln = new Plane(origin, gridPlane.XAxis, gridPlane.YAxis);
+                    //containing box with allowance in x and z directions
+                    Box box = new Box(boxPln, new Interval(-parameters.xCell / 10, parameters.width + parameters.xCell / 10), new Interval(0, parameters.yCell), new Interval(-parameters.zCell / 10, parameters.height + parameters.zCell / 10));
+                    Mesh sectionVolume = Mesh.CreateFromBox(box, 1, 1, 1);
+                    spanBoxes.Add(sectionVolume);
+                    foreach(Brep b in parameters.wall)
+                    {
+                        var boundVol = Brep.CreateBooleanIntersection(box.ToBrep(), b, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
+                        if (boundVol!=null)
+                        {
+                            structuralSpans.Add(new StructuralSpan(parameters, slice, boxPln, y,boundVol[0]));
+                        }
+                    }
+                    
                 }
             }
         }
